@@ -18,14 +18,9 @@ import {
   summarizeFiles,
   writeDecisionLayerAnalysisLog,
 } from "@/lib/decisionLayerAnalysisLogs";
+import { maskSecret } from "@/lib/replicateDebug";
 
 const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
-
-const maskSecret = (value?: string | null) => {
-  if (!value) return "Not configured";
-  if (value.length <= 8) return `${value.slice(0, 2)}***${value.slice(-2)}`;
-  return `${value.slice(0, 4)}...${value.slice(-4)}`;
-};
 
 export async function POST(request: NextRequest) {
   const startedAt = new Date().toISOString();
@@ -87,6 +82,10 @@ export async function POST(request: NextRequest) {
       );
     }
     console.log("📊 Starting Video Decision Layer Analysis (Phase 2)...");
+    console.log("   Replicate config:", {
+      tokenConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+      tokenMasked: maskSecret(process.env.REPLICATE_API_TOKEN),
+    });
     // ═══════════════════════════════════════════════════════
     // STEP 1: Extract frames from video
     // ═══════════════════════════════════════════════════════

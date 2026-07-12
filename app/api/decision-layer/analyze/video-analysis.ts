@@ -6,6 +6,7 @@ import {
 } from "@/lib/ai/gemini";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 import { uploadAudioTempAndGetSignedUrl } from "@/lib/audioTempStorage";
+import { logReplicateError, maskSecret } from "@/lib/replicateDebug";
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const DECISION_LAYER_PRIMARY_MODEL = "gemini-3.1-pro-preview";
 const DECISION_LAYER_REQUEST_OPTIONS = disableGeminiFallback();
@@ -1066,7 +1067,20 @@ async function classifyMusicFromVideo(
       mtgResult = await res.json();
       console.log("MTG raw result:", JSON.stringify(mtgResult, null, 2));
     } else if (classificationOutput.status === "rejected") {
-      console.error("MTG error:", classificationOutput.reason);
+      logReplicateError("MTG error", classificationOutput.reason, {
+        stage: "classifyMusicFromVideo",
+        modelVersion:
+          "mtg/effnet-discogs:1532dd069fb4f0e27c6833e28815f6b8c194dfec76fd9cd73460540fd720ffe1",
+        audioUrlHost: (() => {
+          try {
+            return new URL(audioUrl).host;
+          } catch {
+            return "invalid-url";
+          }
+        })(),
+        replicateTokenConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+        replicateTokenMasked: maskSecret(process.env.REPLICATE_API_TOKEN),
+      });
     }
 
     // ── CWALO: fetch first file URL, then parse JSON
@@ -1079,7 +1093,20 @@ async function classifyMusicFromVideo(
       cwaloResult = await res.json();
       console.log("CWALO raw result:", JSON.stringify(cwaloResult, null, 2));
     } else if (structureOutput.status === "rejected") {
-      console.error("CWALO error:", structureOutput.reason);
+      logReplicateError("CWALO error", structureOutput.reason, {
+        stage: "classifyMusicFromVideo",
+        modelVersion:
+          "cwalo/all-in-one-music-structure-analysis:6deeba047db17da69e9826c0285cd137cd2a81af05eb44ff496b7acd69b3a383",
+        audioUrlHost: (() => {
+          try {
+            return new URL(audioUrl).host;
+          } catch {
+            return "invalid-url";
+          }
+        })(),
+        replicateTokenConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+        replicateTokenMasked: maskSecret(process.env.REPLICATE_API_TOKEN),
+      });
     }
 
     // ── Parse MTG genres (format: "Genre---Subgenre": probability) ──
@@ -1116,7 +1143,11 @@ async function classifyMusicFromVideo(
       structure,
     };
   } catch (error) {
-    console.error("  ⚠️ Replicate failed:", error);
+    logReplicateError("  ⚠️ Replicate failed", error, {
+      stage: "classifyMusicFromVideo",
+      replicateTokenConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+      replicateTokenMasked: maskSecret(process.env.REPLICATE_API_TOKEN),
+    });
     return null;
   }
 }

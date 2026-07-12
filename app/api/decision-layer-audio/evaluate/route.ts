@@ -13,14 +13,9 @@ import {
   summarizeFiles,
   writeDecisionLayerAnalysisLog,
 } from "@/lib/decisionLayerAnalysisLogs";
+import { maskSecret } from "@/lib/replicateDebug";
 
 const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
-
-const maskSecret = (value?: string | null) => {
-  if (!value) return "Not configured";
-  if (value.length <= 8) return `${value.slice(0, 2)}***${value.slice(-2)}`;
-  return `${value.slice(0, 4)}...${value.slice(-4)}`;
-};
 
 export const maxDuration = 300; // 5 minutes max for audio processing
 
@@ -120,6 +115,10 @@ export async function POST(req: NextRequest) {
     );
     console.log(`   Type: ${audioFile.type}`);
     console.log(`   Creator context:`, creatorContext);
+    console.log("   Replicate config:", {
+      tokenConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+      tokenMasked: maskSecret(process.env.REPLICATE_API_TOKEN),
+    });
 
     // ── Upload audio to temporary URL for Replicate ──
     // Replicate models need a URL, so we convert to base64 data URL

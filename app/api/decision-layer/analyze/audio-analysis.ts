@@ -1,5 +1,6 @@
 import { disableGeminiFallback, GoogleGenerativeAI } from "@/lib/ai/gemini";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
+import { logReplicateError, maskSecret } from "@/lib/replicateDebug";
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const DECISION_LAYER_PRIMARY_MODEL = "gemini-3.1-pro-preview";
 const DECISION_LAYER_REQUEST_OPTIONS = disableGeminiFallback();
@@ -54,6 +55,59 @@ Generic descriptions ("nice music", "good track") = automatic NEEDS_REVIEW.
 No approval without explicit ML evidence.`;
 import Replicate from "replicate";
 import { supabase } from "@/lib/supabaseClient";
+
+function tryParseJsonObject(text: string): any | null {
+  const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  if (!cleaned) return null;
+
+  const attempts = [cleaned];
+  const objectMatch = cleaned.match(/\{[\s\S]*$/);
+  if (objectMatch && objectMatch[0] !== cleaned) {
+    attempts.push(objectMatch[0]);
+  }
+
+  for (const attempt of attempts) {
+    try {
+      return JSON.parse(attempt);
+    } catch {
+      const repaired = closeJsonDelimiters(attempt);
+      if (repaired !== attempt) {
+        try {
+          return JSON.parse(repaired);
+        } catch {
+          // keep trying
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function closeJsonDelimiters(text: string): string {
+  let repaired = text.trim();
+  let braceBalance = 0;
+  let bracketBalance = 0;
+
+  for (const char of repaired) {
+    if (char === "{") braceBalance += 1;
+    else if (char === "}") braceBalance -= 1;
+    else if (char === "[") bracketBalance += 1;
+    else if (char === "]") bracketBalance -= 1;
+  }
+
+  while (bracketBalance > 0) {
+    repaired += "]";
+    bracketBalance -= 1;
+  }
+
+  while (braceBalance > 0) {
+    repaired += "}";
+    braceBalance -= 1;
+  }
+
+  return repaired;
+}
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -295,7 +349,20 @@ async function classifyMusic(
       approachability: 0,
     };
   } catch (error) {
-    console.error("  ⚠️ Music classification failed:", error);
+    logReplicateError("  ⚠️ Music classification failed", error, {
+      stage: "classifyMusic",
+      modelVersion:
+        "mtg/effnet-discogs:1532dd069fb4f0e27c6833e28815f6b8c194dfec76fd9cd73460540fd720ffe1",
+      audioUrlHost: (() => {
+        try {
+          return new URL(audioUrl).host;
+        } catch {
+          return "invalid-url";
+        }
+      })(),
+      replicateTokenConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+      replicateTokenMasked: maskSecret(process.env.REPLICATE_API_TOKEN),
+    });
     return {
       genres: [],
       moods: [],
@@ -364,7 +431,20 @@ async function analyzeStructure(
       hasDemux: false,
     };
   } catch (error) {
-    console.error("  ⚠️ Structure analysis failed:", error);
+    logReplicateError("  ⚠️ Structure analysis failed", error, {
+      stage: "analyzeStructure",
+      modelVersion:
+        "cwalo/all-in-one-music-structure-analysis:6deeba047db17da69e9826c0285cd137cd2a81af05eb44ff496b7acd69b3a383",
+      audioUrlHost: (() => {
+        try {
+          return new URL(audioUrl).host;
+        } catch {
+          return "invalid-url";
+        }
+      })(),
+      replicateTokenConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+      replicateTokenMasked: maskSecret(process.env.REPLICATE_API_TOKEN),
+    });
     return {
       bpm: 0,
       key: "unknown",
@@ -508,7 +588,7 @@ Respond in this EXACT JSON:
     DECISION_LAYER_REQUEST_OPTIONS,
   );
   logGeminiUsage(descResult, { feature: "decision_layer_audio", model: DECISION_LAYER_PRIMARY_MODEL });
-  const result = JSON.parse(descResult.response.text());
+  const result = tryParseJsonObject(descResult.response.text()) || {};
   console.log("  ✓ Call 1 complete — audio description done");
 
   return {
@@ -608,7 +688,7 @@ Respond in this EXACT JSON:
     DECISION_LAYER_REQUEST_OPTIONS,
   );
   logGeminiUsage(scoreResult, { feature: "decision_layer_audio", model: DECISION_LAYER_PRIMARY_MODEL });
-  const axisScores = JSON.parse(scoreResult.response.text());
+  const axisScores = tryParseJsonObject(scoreResult.response.text()) || {};
   Object.keys(axisScores).forEach((key) => {
     if (axisScores[key]?.score) {
       axisScores[key].score = Math.round((axisScores[key].score / 5) * 100);
@@ -750,7 +830,7 @@ RESPOND WITH VALID JSON ONLY:
     DECISION_LAYER_REQUEST_OPTIONS,
   );
   logGeminiUsage(alignResult, { feature: "decision_layer_audio", model: DECISION_LAYER_PRIMARY_MODEL });
-  const parsed = JSON.parse(alignResult.response.text());
+  const parsed = tryParseJsonObject(alignResult.response.text()) || {};
 if (parsed.realAlignment?.score) {
   parsed.realAlignment.score = Math.round((parsed.realAlignment.score / 10) * 100);
 }
@@ -877,7 +957,7 @@ Respond in EXACT JSON:
     DECISION_LAYER_REQUEST_OPTIONS,
   );
   logGeminiUsage(coachResult, { feature: "decision_layer_audio", model: DECISION_LAYER_PRIMARY_MODEL });
-  const data = JSON.parse(coachResult.response.text());
+  const data = tryParseJsonObject(coachResult.response.text()) || {};
   console.log("  ✓ Call 3 complete — audio coaching + pricing done");
 
   return {
