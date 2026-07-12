@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     const audioFile = files[0];
+    const maxAudioSizeBytes = 100 * 1024 * 1024;
 
     // Validate audio file
     const validTypes = [
@@ -74,6 +75,16 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: `Unsupported audio format: ${audioFile.type}. Supported: MP3, WAV, FLAC, M4A, AAC, OGG, WebM`,
+        },
+        { status: 400 },
+      );
+    }
+
+    if (audioFile.size > maxAudioSizeBytes) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Audio file exceeds 100MB limit.",
         },
         { status: 400 },
       );

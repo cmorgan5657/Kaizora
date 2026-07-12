@@ -180,7 +180,7 @@ type AnalysisMode = "fast" | "full";
 const MB = 1024 * 1024;
 const UPLOAD_LIMITS = {
   imageBytes: 25 * MB,
-  audioBytes: 50 * MB,
+  audioBytes: 100 * MB,
   videoBytes: 200 * MB,
   pdfBytes: 25 * MB,
   textBytes: 10 * MB,
@@ -5842,7 +5842,7 @@ function DecisionLayerFlowContent() {
                           {fileMode === "video"
                             ? "200MB, 120s max"
                             : fileMode === "audio"
-                              ? "50MB max"
+                              ? "100MB max"
                               : fileMode === "text"
                                 ? "10MB max"
                                 : "25MB max"}
