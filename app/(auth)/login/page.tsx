@@ -56,6 +56,7 @@ function ForgotPasswordForm({
       </div>
 
       <button
+        type="button"
         onClick={handleReset}
         disabled={loading}
         className="w-full bg-linear-to-r from-red-600 cursor-pointer to-red-700 py-2 md:py-3 text-xs md:text-sm text-white"
@@ -63,6 +64,7 @@ function ForgotPasswordForm({
         {loading ? "Sending..." : "Send Reset Link"}
       </button>
       <button
+        type="button"
         onClick={() => setMode("login")}
         className="w-full text-gray-400 cursor-pointer hover:text-gray-200 text-sm mt-4"
       >
@@ -349,6 +351,7 @@ const handleAppleLogin = async () => {
                     </span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => setMode("forgot")}
                     className="text-red-400 hover:text-red-300 cursor-pointer transition-colors"
                   >
