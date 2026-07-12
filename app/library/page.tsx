@@ -323,17 +323,17 @@ export default function LibraryPage() {
                   key={asset.id}
                   className="group overflow-hidden rounded-[28px] border border-white/[0.06] bg-[#0f0f0f] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.14] hover:shadow-2xl hover:shadow-black/50"
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-[#0b0b0b]">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-[#0b0b0b] flex items-center justify-center">
                     {asset.content_type === "image" && previewUrl ? (
                       <img
                         src={previewUrl}
                         alt={asset.title || "Asset preview"}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                        className="h-full w-full object-contain object-center transition-transform duration-700 group-hover:scale-[1.04]"
                       />
                     ) : asset.content_type === "video" && previewUrl ? (
                       <video
                         src={previewUrl}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-contain object-center bg-[#0b0b0b]"
                         controls
                         preload="metadata"
                         onClick={(event) => event.stopPropagation()}

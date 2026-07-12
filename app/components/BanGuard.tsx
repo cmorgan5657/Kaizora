@@ -2,18 +2,21 @@
 
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { handleClientAuthFailure } from "@/lib/clientAuthFailure";
 
 export default function BanGuard() {
   useEffect(() => {
     async function checkBan() {
-      const { data } = await supabase.auth.getUser();
+      const { data, error: authError } = await supabase.auth.getUser();
+      if (await handleClientAuthFailure(authError)) return;
       if (!data.user) return;
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("is_banned")
         .eq("id", data.user.id)
         .single();
+      if (await handleClientAuthFailure(profileError)) return;
 
       if (profile?.is_banned) {
         await supabase.auth.signOut();

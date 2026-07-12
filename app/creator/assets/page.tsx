@@ -97,14 +97,18 @@ export default function CreatorAssetsPage() {
     switch (asset.content_type) {
       case "image":
         return (
-          <img src={thumbUrl || fileUrl || ""} className="w-full h-full object-cover" alt="preview" />
+          <img
+            src={thumbUrl || fileUrl || ""}
+            className="w-full h-full object-contain object-center"
+            alt="preview"
+          />
         );
       case "video":
         return (
           <video
             src={fileUrl || ""}
             poster={thumbUrl || undefined}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain object-center bg-black"
             muted
             preload="metadata"
             onMouseEnter={(e) => (e.currentTarget as HTMLVideoElement).play().catch(() => {})}
@@ -231,7 +235,7 @@ export default function CreatorAssetsPage() {
                   onClick={() => router.push(`/creator/assets/${asset.id}`)}
                   className="group relative bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
-                  <div className="h-28 md:h-48 bg-black overflow-hidden">
+                  <div className="h-28 md:h-48 bg-black overflow-hidden flex items-center justify-center">
                     {renderThumb(asset)}
                   </div>
 

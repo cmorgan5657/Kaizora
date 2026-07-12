@@ -7,6 +7,7 @@ import { X, Zap, RefreshCw, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { availableBalance } from "@/lib/creditExpiry";
 import { syncSubscriptionCredits } from "@/lib/syncSubscriptionCredits";
+import { handleClientAuthFailure } from "@/lib/clientAuthFailure";
 
 // Don't nag the user on pages where they'd already be topping up / subscribing.
 const HIDE_ON = [
@@ -35,7 +36,9 @@ export default function CreditsExhaustedModal() {
     const load = async () => {
       const {
         data: { user },
+        error: authError,
       } = await supabase.auth.getUser();
+      if (await handleClientAuthFailure(authError)) return;
       if (!user) {
         if (active) {
           setBalance(null);
@@ -44,11 +47,12 @@ export default function CreditsExhaustedModal() {
         return;
       }
       await syncSubscriptionCredits();
-      const { data } = await supabase
+      const { data, error: creditsError } = await supabase
         .from("user_credits")
         .select("balance, total_purchased, expires_at")
         .eq("user_id", user.id)
         .maybeSingle();
+      if (await handleClientAuthFailure(creditsError)) return;
       if (!active) return;
       setBalance(availableBalance(data?.balance, data?.expires_at));
       setEverHadCredits((data?.total_purchased ?? 0) > 0);

@@ -109,6 +109,9 @@ export default function LoginPage() {
     if (params.get("error") === "suspended") {
       setError("Your account has been suspended. Contact support for help.");
     }
+    if (params.get("error") === "session-expired") {
+      setError("Your session expired. Please log in again.");
+    }
     if (params.get("registered") === "true") {
       setMessage("Signup request received. Please confirm your email before logging in.");
     }
