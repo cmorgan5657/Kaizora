@@ -1,0 +1,8 @@
+gemini-3.5-flash - no
+
+
+gemini-3.1-flash-lite - working fine 
+
+gemini-3.1-pro-preview - 
+
+gemini-3-flash-preview - 
