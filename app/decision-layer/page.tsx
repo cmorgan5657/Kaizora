@@ -1943,7 +1943,7 @@ function DecisionLayerFlowContent() {
           {
             id: "ctx_media_text",
             label: "Text",
-            description: "Guides, scripts, prompts, ebooks",
+            description: "Guides, scripts, prompts",
           },
           {
             id: "ctx_media_both",
@@ -2391,7 +2391,7 @@ function DecisionLayerFlowContent() {
               {
                 id: "ctx_media_text",
                 label: "Text",
-                description: "Guides, scripts, prompts, ebooks",
+                description: "Guides, scripts, prompts",
               },
             ]);
             setAgentMessages((prev) => [
