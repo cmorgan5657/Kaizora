@@ -159,9 +159,44 @@ export default function LoginPage() {
           return;
         }
 
+        const metadataDob = data.session.user.user_metadata?.date_of_birth;
+
         if (!profile?.id || !profile.date_of_birth) {
-          router.push("/complete-profile");
-          return;
+          if (metadataDob) {
+            const { error: profileUpsertError } = await supabase
+              .from("profiles")
+              .upsert(
+                {
+                  id: data.session.user.id,
+                  date_of_birth: metadataDob,
+                  display_name:
+                    data.session.user.user_metadata?.full_name || userEmail,
+                  avatar_url:
+                    data.session.user.user_metadata?.avatar_url || "",
+                  bio: data.session.user.user_metadata?.bio || null,
+                  twitter_url:
+                    data.session.user.user_metadata?.twitter_url || null,
+                  linkedin_url:
+                    data.session.user.user_metadata?.linkedin_url || null,
+                  website_url:
+                    data.session.user.user_metadata?.website_url || null,
+                  role: "user",
+                },
+                { onConflict: "id" },
+              );
+
+            if (profileUpsertError) {
+              setError(
+                profileUpsertError.message ||
+                  "We could not finish setting up your profile.",
+              );
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            router.push("/complete-profile");
+            return;
+          }
         }
 
         const params = new URLSearchParams(window.location.search);

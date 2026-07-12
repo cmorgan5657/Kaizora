@@ -40,6 +40,7 @@ export default function CompleteProfilePage() {
         router.push("/login");
         return;
       }
+      const metadataDob = session.user.user_metadata?.date_of_birth || "";
       // If already has date of birth, go home
       const { data: profile } = await supabase
         .from("profiles")
@@ -49,6 +50,30 @@ export default function CompleteProfilePage() {
       if (profile?.date_of_birth) {
         router.push("/");
         return;
+      }
+      if (metadataDob) {
+        const { error: profileUpsertError } = await supabase
+          .from("profiles")
+          .upsert(
+            {
+              id: session.user.id,
+              date_of_birth: metadataDob,
+              display_name:
+                session.user.user_metadata?.full_name || session.user.email,
+              avatar_url: session.user.user_metadata?.avatar_url || "",
+              bio: session.user.user_metadata?.bio || null,
+              twitter_url: session.user.user_metadata?.twitter_url || null,
+              linkedin_url: session.user.user_metadata?.linkedin_url || null,
+              website_url: session.user.user_metadata?.website_url || null,
+              role: "user",
+            },
+            { onConflict: "id" },
+          );
+
+        if (!profileUpsertError) {
+          router.push("/");
+          return;
+        }
       }
       setChecking(false);
     };

@@ -16,6 +16,7 @@ export default function AuthCallback() {
       done = true;
 
       const user = session.user;
+      const metadataDob = user.user_metadata?.date_of_birth || null;
       setBetaEmailCookie(user.email);
 
       const { data: existingProfile } = await supabase
@@ -27,6 +28,7 @@ export default function AuthCallback() {
       if (!existingProfile) {
         await supabase.from("profiles").upsert({
           id: user.id,
+          date_of_birth: metadataDob,
           display_name: user.user_metadata?.full_name || user.email,
           avatar_url: user.user_metadata?.avatar_url || "",
           bio: user.user_metadata?.bio || null,
@@ -35,11 +37,31 @@ export default function AuthCallback() {
           website_url: user.user_metadata?.website_url || null,
           role: "user",
         }, { onConflict: "id" });
-        router.push("/complete-profile");
+        router.push(metadataDob ? "/" : "/complete-profile");
         return;
       }
 
       if (!existingProfile.date_of_birth) {
+        if (metadataDob) {
+          await supabase
+            .from("profiles")
+            .upsert(
+              {
+                id: user.id,
+                date_of_birth: metadataDob,
+                display_name: user.user_metadata?.full_name || user.email,
+                avatar_url: user.user_metadata?.avatar_url || "",
+                bio: user.user_metadata?.bio || null,
+                twitter_url: user.user_metadata?.twitter_url || null,
+                linkedin_url: user.user_metadata?.linkedin_url || null,
+                website_url: user.user_metadata?.website_url || null,
+                role: "user",
+              },
+              { onConflict: "id" },
+            );
+          router.push("/");
+          return;
+        }
         router.push("/complete-profile");
         return;
       }
