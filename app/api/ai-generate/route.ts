@@ -8,6 +8,8 @@ import { logFalUsage, logReplicateUsage } from "@/lib/ai/genUsage";
 import sharp from "sharp";
 import { canAfford, forceDeduct } from "@/lib/credits";
 import { getRemixCreditActionKey } from "@/lib/creditPricing";
+import { maskSecret } from "@/lib/replicateDebug";
+import { uploadAudioTempAndGetSignedUrl } from "@/lib/audioTempStorage";
 
 // Local thin wrappers so existing call sites don't need to import these.
 // The userId is captured from the outer route closure where available.
@@ -116,6 +118,35 @@ function getErrorLogPayload(error: any) {
     cause: safeSerialize(error?.cause),
     stack: error?.stack,
   };
+}
+
+function summarizeInputSource(value: string | null | undefined) {
+  if (!value) {
+    return { kind: "missing", host: null, preview: null };
+  }
+
+  if (value.startsWith("data:")) {
+    return {
+      kind: "data-uri",
+      host: null,
+      preview: value.slice(0, 48),
+    };
+  }
+
+  try {
+    const url = new URL(value);
+    return {
+      kind: "url",
+      host: url.host,
+      preview: `${url.protocol}//${url.host}${url.pathname.slice(0, 60)}`,
+    };
+  } catch {
+    return {
+      kind: "raw-string",
+      host: null,
+      preview: value.slice(0, 80),
+    };
+  }
 }
 
 
@@ -419,7 +450,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("🚀 Starting generation:", { mode, userPrompt, upscale });
+    console.log("🚀 Starting generation:", {
+      mode,
+      userPrompt,
+      upscale,
+      selectedModel,
+      aspectRatio,
+      quality,
+      audioDuration,
+      hasImageUrl: Boolean(imageUrl),
+      inputSource: summarizeInputSource(imageUrl),
+      replicateConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+      replicateMasked: maskSecret(process.env.REPLICATE_API_TOKEN),
+      falConfigured: Boolean(process.env.FAL_AI_KEY),
+    });
 
     const imageDataUri =
       mode === "vid2vid" || mode === "aud2aud"
@@ -781,6 +825,13 @@ export async function POST(req: NextRequest) {
 
       const duration = body.audioDuration || 8;
       const remixModel = body.remixModel || "melody";
+      console.log("🎧 Entering aud2aud pipeline", {
+        audioPrompt,
+        duration,
+        remixModel,
+        selectedModel,
+        inputSource: summarizeInputSource(imageUrl),
+      });
 
       // STEP 1: GPT-4o classifies intent
       let intent = "remix_melody"; // default
@@ -834,6 +885,11 @@ If unsure, default to "remix_melody".`,
       if (remixModel === "remixer") intent = "remix_vocal";
       if (remixModel === "fullsong") intent = "full_song";
       if (remixModel === "acestep") intent = "text_to_song";
+      console.log("🧭 aud2aud resolved intent", {
+        intent,
+        remixModel,
+        selectedModel,
+      });
 
       // ── REMIX ROUTES ──
       if (
@@ -865,6 +921,12 @@ Keep under 150 words. Return ONLY the music prompt.`,
 
         if (intent === "remix_vocal") {
           console.log("🔄 Using MusicGen Remixer (vocals preserved)...");
+          console.log("🛰️ Replicate request", {
+            model: "sakemin/musicgen-remixer:d7e98a2e92eaa33c4e1d43588fb4b37a9766b3ba2df634295218d165618dc733",
+            inputField: "music_input",
+            inputSource: summarizeInputSource(imageUrl),
+            duration,
+          });
           output = await replicate.run(
             "sakemin/musicgen-remixer:d7e98a2e92eaa33c4e1d43588fb4b37a9766b3ba2df634295218d165618dc733",
             {
@@ -879,6 +941,12 @@ Keep under 150 words. Return ONLY the music prompt.`,
           );
         } else if (intent === "remix_chord") {
           console.log("🎶 Using MusicGen Chord...");
+          console.log("🛰️ Replicate request", {
+            model: "sakemin/musicgen-chord:c940ab4308578237484f90f010b2b3871bf64008e95f26f4d567529ad019a3d6",
+            inputField: "audio_chords",
+            inputSource: summarizeInputSource(imageUrl),
+            duration,
+          });
           output = await replicate.run(
             "sakemin/musicgen-chord:c940ab4308578237484f90f010b2b3871bf64008e95f26f4d567529ad019a3d6",
             {
@@ -894,6 +962,12 @@ Keep under 150 words. Return ONLY the music prompt.`,
           );
         } else {
           console.log("🎵 Using MusicGen Melody...");
+          console.log("🛰️ Replicate request", {
+            model: "meta/musicgen:671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb",
+            inputField: "input_audio",
+            inputSource: summarizeInputSource(imageUrl),
+            duration,
+          });
           output = await replicate.run(
             "meta/musicgen:671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb",
             {
@@ -913,6 +987,10 @@ Keep under 150 words. Return ONLY the music prompt.`,
         }
 
         resultUrl = await handleReplicateOutput(output, "audio");
+        console.log("✅ aud2aud remix output resolved", {
+          intent,
+          resultUrl,
+        });
         // Deduct credits after successful generation
 
         if (userId && userId !== "anonymous" && creditCost > 0) {
@@ -937,6 +1015,10 @@ Keep under 150 words. Return ONLY the music prompt.`,
       // ── STEM SEPARATION ──
       if (intent === "stem_separate") {
         console.log("🎛️ Using Demucs HTDemucs for stem separation...");
+        console.log("🌐 Fal request", {
+          model: "fal-ai/demucs",
+          inputSource: summarizeInputSource(imageUrl),
+        });
 
         // Detect which stem user wants
         let stemType = "all"; // default: return all stems
@@ -1167,26 +1249,17 @@ Examples:
         const processedBuffer = fs.readFileSync(outputPath);
         const processedFileName = `processed-${Date.now()}.mp3`;
 
-        // Upload to audio-temp bucket
-        const { createClient } = require("@supabase/supabase-js");
-        const supabaseAdmin = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        );
-
-        const storagePath = `processed/${processedFileName}`;
-        await supabaseAdmin.storage
-          .from("audio-temp")
-          .upload(storagePath, processedBuffer, {
-            contentType: "audio/mpeg",
-            upsert: true,
-          });
-
-        const { data: publicUrlData } = supabaseAdmin.storage
-          .from("audio-temp")
-          .getPublicUrl(storagePath);
-
-        resultUrl = publicUrlData.publicUrl;
+        const { path: storagePath, signedUrl } =
+          await uploadAudioTempAndGetSignedUrl(
+            processedFileName,
+            processedBuffer,
+            "audio/mpeg",
+          );
+        resultUrl = signedUrl;
+        console.log("🔐 Processed audio signed URL generated", {
+          storagePath,
+          inputSource: summarizeInputSource(resultUrl),
+        });
 
         // Cleanup temp files
         try {
@@ -1216,6 +1289,11 @@ Examples:
         });
       }
       if (intent === "full_song") {
+        console.log("🌐 Fal request", {
+          model: "fal-ai/minimax-music",
+          inputSource: summarizeInputSource(imageUrl),
+          duration,
+        });
         const fullSongRes = await fal.subscribe("fal-ai/minimax-music", {
           input: {
             prompt: audioPrompt,
@@ -1247,6 +1325,11 @@ Examples:
       }
 
       if (intent === "text_to_song") {
+        console.log("🛰️ Replicate request", {
+          model: "lucataco/ace-step:280fc4f9ee507577f880a167f639c02622421d8fecf492454320311217b688f1",
+          audioDuration: Math.min(body.audioDuration || 30, 240),
+          hasLyrics: Boolean(body.lyrics),
+        });
         output = await replicate.run(
           "lucataco/ace-step:280fc4f9ee507577f880a167f639c02622421d8fecf492454320311217b688f1",
           {
@@ -1277,6 +1360,12 @@ Examples:
       }
       // ── FALLBACK: default to melody remix ──
       console.log("🎵 Fallback: MusicGen Melody...");
+      console.log("🛰️ Replicate fallback request", {
+        model: "meta/musicgen:671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb",
+        inputField: "input_audio",
+        inputSource: summarizeInputSource(imageUrl),
+        duration,
+      });
       let fallbackPrompt = audioPrompt;
       try {
         const enhancement = await geminiChat([

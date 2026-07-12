@@ -335,16 +335,24 @@ export default function RegenerateStudio() {
           const fileName = `remix-audio-${Date.now()}.${file.name.split(".").pop()}`;
           const storagePath = `${userId}/${fileName}`;
 
-          await supabase.storage.from("audio-temp").upload(storagePath, file, {
+          const { error: uploadError } = await supabase.storage
+            .from("audio-temp")
+            .upload(storagePath, file, {
             contentType: file.type,
             upsert: true,
           });
+          if (uploadError) throw uploadError;
 
-          const { data: urlData } = supabase.storage
-            .from("audio-temp")
-            .getPublicUrl(storagePath);
+          const { data: signedData, error: signedError } =
+            await supabase.storage
+              .from("audio-temp")
+              .createSignedUrl(storagePath, 60 * 60);
 
-          finalImageUrl = urlData.publicUrl;
+          if (signedError || !signedData?.signedUrl) {
+            throw new Error("Failed to create signed URL for audio remix.");
+          }
+
+          finalImageUrl = signedData.signedUrl;
         } else {
           finalImageUrl = await new Promise<string>((resolve) => {
             const reader = new FileReader();
