@@ -7,6 +7,10 @@ import {
   CreatorContext,
 } from "../../decision-layer/analyze/text-analysis";
 import { canAfford, forceDeduct } from "@/lib/credits";
+import {
+  summarizeFiles,
+  writeDecisionLayerAnalysisLog,
+} from "@/lib/decisionLayerAnalysisLogs";
 
 const maskSecret = (value?: string | null) => {
   if (!value) return "Not configured";
@@ -17,6 +21,9 @@ const maskSecret = (value?: string | null) => {
 export const maxDuration = 120; // 2 minutes max for text processing
 
 export async function POST(req: NextRequest) {
+  const startedAt = new Date().toISOString();
+  let requestSummary: Record<string, unknown> = {};
+
   try {
     const formData = await req.formData();
     const files = formData.getAll("files") as File[];
@@ -117,6 +124,15 @@ export async function POST(req: NextRequest) {
     } catch {
       // ignore
     }
+    requestSummary = {
+      userId: userId || "anonymous",
+      customPrompt,
+      userConcern,
+      creatorContext,
+      contextSummary,
+      clientSignals,
+      files: summarizeFiles(files),
+    };
 
     console.log("📝 Text evaluation request received");
     console.log(
@@ -239,6 +255,20 @@ export async function POST(req: NextRequest) {
       fallbackEvaluation: textAnalysis.fallbackEvaluation,
     };
 
+    const analysisLogFile = await writeDecisionLayerAnalysisLog({
+      route: "/api/decision-layer-text/evaluate",
+      mediaType: "text",
+      status: "success",
+      startedAt,
+      request: requestSummary,
+      responseStatus: 200,
+      result: {
+        evaluation,
+        textAnalysis,
+        creditCost,
+      },
+    });
+
     // Deduct credits AFTER successful analysis
     if (userId && userId !== "anonymous" && creditCost > 0) {
       const deduction = await forceDeduct(
@@ -270,10 +300,20 @@ export async function POST(req: NextRequest) {
             },
           ],
         },
+        analysis_log_file: analysisLogFile,
       },
     });
   } catch (error: any) {
     console.error("Text evaluation error:", error);
+    const analysisLogFile = await writeDecisionLayerAnalysisLog({
+      route: "/api/decision-layer-text/evaluate",
+      mediaType: "text",
+      status: "error",
+      startedAt,
+      request: requestSummary,
+      responseStatus: 500,
+      error,
+    });
     return NextResponse.json(
       {
         success: false,
@@ -288,6 +328,7 @@ export async function POST(req: NextRequest) {
                 masked: maskSecret(process.env.GEMINI_API_KEY),
               },
             ],
+            analysis_log_file: analysisLogFile,
           },
         },
       },

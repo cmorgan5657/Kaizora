@@ -10,6 +10,10 @@ import {
   ImageAnalysisMode,
 } from "../analyze/image-analysis";
 import { canAfford, forceDeduct } from "@/lib/credits";
+import {
+  summarizeFiles,
+  writeDecisionLayerAnalysisLog,
+} from "@/lib/decisionLayerAnalysisLogs";
 
 const maskSecret = (value?: string | null) => {
   if (!value) return "Not configured";
@@ -18,6 +22,9 @@ const maskSecret = (value?: string | null) => {
 };
 
 export async function POST(request: NextRequest) {
+  const startedAt = new Date().toISOString();
+  let requestSummary: Record<string, unknown> = {};
+
   try {
     const formData = await request.formData();
     const files = formData.getAll("files") as File[];
@@ -58,6 +65,16 @@ export async function POST(request: NextRequest) {
       : buildCreatorContext(contextSummary, userConcern);
     const rawClientSignals = formData.get("clientSignals") as string | null;
     const clientSignals = rawClientSignals ? JSON.parse(rawClientSignals) : [];
+    requestSummary = {
+      userId: userId || "anonymous",
+      customPrompt,
+      analysisMode,
+      userConcern,
+      creatorContext,
+      contextSummary,
+      clientSignals,
+      files: summarizeFiles(files),
+    };
     if (!files.length) {
       return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
     }
@@ -293,6 +310,20 @@ export async function POST(request: NextRequest) {
     console.log(`   Verdict: ${imageAnalysis.alignmentVerdict}`);
     console.log(`   Pain Point: ${imageAnalysis.topPainPoint}`);
 
+    const analysisLogFile = await writeDecisionLayerAnalysisLog({
+      route: "/api/decision-layer/evaluate",
+      mediaType: "image",
+      status: "success",
+      startedAt,
+      request: requestSummary,
+      responseStatus: 200,
+      result: {
+        evaluation,
+        imageAnalysis,
+        creditCost,
+      },
+    });
+
     // Deduct credits AFTER successful analysis
     if (userId && userId !== "anonymous" && creditCost > 0) {
       const deduction = await forceDeduct(
@@ -337,11 +368,21 @@ export async function POST(request: NextRequest) {
             : "3-call (description → scoring → coaching)",
         analysis_mode: analysisMode,
         creator_context: creatorContext,
+        analysis_log_file: analysisLogFile,
       },
     });
   } catch (error: any) {
     console.error("❌ Decision layer API error:", error);
     if (error?.code === "VISION_VERIFICATION_FAILED") {
+      const analysisLogFile = await writeDecisionLayerAnalysisLog({
+        route: "/api/decision-layer/evaluate",
+        mediaType: "image",
+        status: "error",
+        startedAt,
+        request: requestSummary,
+        responseStatus: 422,
+        error,
+      });
       return NextResponse.json(
         {
           error: error.userMessage || "Vision verification failed",
@@ -359,12 +400,22 @@ export async function POST(request: NextRequest) {
                   masked: maskSecret(process.env.GEMINI_API_KEY),
                 },
               ],
+              analysis_log_file: analysisLogFile,
             },
           },
         },
         { status: 422 },
       );
     }
+    const analysisLogFile = await writeDecisionLayerAnalysisLog({
+      route: "/api/decision-layer/evaluate",
+      mediaType: "image",
+      status: "error",
+      startedAt,
+      request: requestSummary,
+      responseStatus: 500,
+      error,
+    });
     return NextResponse.json(
       {
         error: "Failed to evaluate content",
@@ -379,6 +430,7 @@ export async function POST(request: NextRequest) {
                 masked: maskSecret(process.env.GEMINI_API_KEY),
               },
             ],
+            analysis_log_file: analysisLogFile,
           },
         },
       },

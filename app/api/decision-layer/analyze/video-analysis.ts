@@ -1,5 +1,11 @@
-import { disableGeminiFallback, GoogleGenerativeAI } from "@/lib/ai/gemini";
+import {
+  disableGeminiFallback,
+  GoogleGenerativeAI,
+  SchemaType,
+  type Schema,
+} from "@/lib/ai/gemini";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
+import { uploadAudioTempAndGetSignedUrl } from "@/lib/audioTempStorage";
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const DECISION_LAYER_PRIMARY_MODEL = "gemini-3.1-pro-preview";
 const DECISION_LAYER_REQUEST_OPTIONS = disableGeminiFallback();
@@ -79,8 +85,287 @@ function createVisionVerificationError({
   };
   return error;
 }
+
+function createAnalysisStageError({
+  code,
+  summary,
+  details,
+  stage,
+  rawText,
+}: {
+  code: string;
+  summary: string;
+  details: string;
+  stage: string;
+  rawText?: string;
+}) {
+  const error = new Error(summary);
+  (error as Error & Record<string, unknown>).code = code;
+  (error as Error & Record<string, unknown>).details = details;
+  (error as Error & Record<string, unknown>).stage = stage;
+  (error as Error & Record<string, unknown>).rawText = rawText || null;
+  return error;
+}
+
+function tryParseJsonObject(text: string): any | null {
+  const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  if (!cleaned) return null;
+
+  const attempts = [cleaned];
+  const objectMatch = cleaned.match(/\{[\s\S]*$/);
+  if (objectMatch && objectMatch[0] !== cleaned) {
+    attempts.push(objectMatch[0]);
+  }
+
+  for (const attempt of attempts) {
+    try {
+      return JSON.parse(attempt);
+    } catch {
+      const repaired = closeJsonDelimiters(attempt);
+      if (repaired !== attempt) {
+        try {
+          return JSON.parse(repaired);
+        } catch {
+          // keep trying other variants
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function closeJsonDelimiters(text: string): string {
+  let repaired = text.trim();
+  let braceBalance = 0;
+  let bracketBalance = 0;
+
+  for (const char of repaired) {
+    if (char === "{") braceBalance += 1;
+    else if (char === "}") braceBalance -= 1;
+    else if (char === "[") bracketBalance += 1;
+    else if (char === "]") bracketBalance -= 1;
+  }
+
+  while (bracketBalance > 0) {
+    repaired += "]";
+    bracketBalance -= 1;
+  }
+
+  while (braceBalance > 0) {
+    repaired += "}";
+    braceBalance -= 1;
+  }
+
+  return repaired;
+}
+
+const readinessAxisNames = [
+  "Creative Clarity",
+  "Technical Quality",
+  "Consistency",
+  "Audience Fit",
+  "Differentiation",
+  "Packaging Readiness",
+] as const;
+
+const readinessLabels = [
+  "Needs Work",
+  "Developing",
+  "Solid",
+  "Strong",
+  "Exceptional",
+] as const;
+
+const verdictLabels = [
+  "monetize-now",
+  "monetize-with-fixes",
+  "portfolio-only",
+  "hold-as-exploration",
+  "not-market-ready",
+] as const;
+
+const effortLabels = ["Quick", "Medium", "Deep"] as const;
+
+const videoScoreAxisSchema: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    axis: {
+      type: SchemaType.STRING,
+      format: "enum",
+      enum: [...readinessAxisNames],
+    },
+    score: { type: SchemaType.NUMBER },
+    label: {
+      type: SchemaType.STRING,
+      format: "enum",
+      enum: [...readinessLabels],
+    },
+    note: { type: SchemaType.STRING },
+  },
+  required: ["axis", "score", "label", "note"],
+};
+
+const videoScoresResponseSchema: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    scores: {
+      type: SchemaType.ARRAY,
+      items: videoScoreAxisSchema,
+    },
+    verdict: {
+      type: SchemaType.STRING,
+      format: "enum",
+      enum: [...verdictLabels],
+    },
+  },
+  required: ["scores", "verdict"],
+};
+
+const videoCoachingResponseSchema: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    roadmap: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          phase: { type: SchemaType.NUMBER },
+          title: { type: SchemaType.STRING },
+          timeframe: { type: SchemaType.STRING },
+          actions: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING },
+          },
+        },
+        required: ["phase", "title", "timeframe", "actions"],
+      },
+    },
+    pricing: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          tier: { type: SchemaType.STRING },
+          range: { type: SchemaType.STRING },
+          justification: { type: SchemaType.STRING },
+          upgradeAction: { type: SchemaType.STRING },
+        },
+        required: ["tier", "range", "justification"],
+      },
+    },
+    painPoint: { type: SchemaType.STRING },
+    honestPricing: {
+      type: SchemaType.OBJECT,
+      properties: {
+        low: { type: SchemaType.NUMBER },
+        high: { type: SchemaType.NUMBER },
+        currency: { type: SchemaType.STRING },
+        reasoning: { type: SchemaType.STRING },
+        comparable: { type: SchemaType.STRING },
+      },
+      required: ["low", "high", "currency", "reasoning", "comparable"],
+    },
+    closingQuestion: { type: SchemaType.STRING },
+  },
+  required: ["roadmap", "pricing", "painPoint", "honestPricing", "closingQuestion"],
+};
+
+const videoAlignmentResponseSchema: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    realAlignment: {
+      type: SchemaType.OBJECT,
+      properties: {
+        score: { type: SchemaType.NUMBER },
+        gapSummary: { type: SchemaType.STRING },
+        blindSpots: {
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING },
+        },
+      },
+      required: ["score", "gapSummary", "blindSpots"],
+    },
+    exactEdits: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          edit: { type: SchemaType.STRING },
+          why: { type: SchemaType.STRING },
+          effort: {
+            type: SchemaType.STRING,
+            format: "enum",
+            enum: [...effortLabels],
+          },
+        },
+        required: ["edit", "why", "effort"],
+      },
+    },
+    fastestPath: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          step: { type: SchemaType.STRING },
+          timeEstimate: { type: SchemaType.STRING },
+        },
+        required: ["step", "timeEstimate"],
+      },
+    },
+  },
+  required: ["realAlignment", "exactEdits", "fastestPath"],
+};
+
+function parseStructuredJson(text: string): any | null {
+  return tryParseJsonObject(text);
+}
+
+async function repairVideoScoresJson(
+  brokenText: string,
+): Promise<any | null> {
+  const repairModel = genai.getGenerativeModel({
+    model: DECISION_LAYER_PRIMARY_MODEL,
+    generationConfig: {
+      maxOutputTokens: 2600,
+      temperature: 0.1,
+      responseMimeType: "application/json",
+      responseSchema: videoScoresResponseSchema,
+    },
+  });
+
+  const repairResult = await repairModel.generateContent(
+    [
+      {
+        text: `Repair and complete this broken scoring JSON into valid JSON only.
+Do not add markdown.
+Preserve the same meaning and scale.
+Return exactly this schema:
+{
+  "scores": [
+    { "axis": "Creative Clarity", "score": 1-5, "label": "Needs Work|Developing|Solid|Strong|Exceptional", "note": "..." },
+    { "axis": "Technical Quality", "score": 1-5, "label": "Needs Work|Developing|Solid|Strong|Exceptional", "note": "..." },
+    { "axis": "Consistency", "score": 1-5, "label": "Needs Work|Developing|Solid|Strong|Exceptional", "note": "..." },
+    { "axis": "Audience Fit", "score": 1-5, "label": "Needs Work|Developing|Solid|Strong|Exceptional", "note": "..." },
+    { "axis": "Differentiation", "score": 1-5, "label": "Needs Work|Developing|Solid|Strong|Exceptional", "note": "..." },
+    { "axis": "Packaging Readiness", "score": 1-5, "label": "Needs Work|Developing|Solid|Strong|Exceptional", "note": "..." }
+  ],
+  "verdict": "monetize-now|monetize-with-fixes|portfolio-only|hold-as-exploration|not-market-ready"
+}
+
+BROKEN JSON:
+${brokenText.slice(0, 6000)}`,
+      },
+    ],
+    DECISION_LAYER_REQUEST_OPTIONS,
+  );
+  logGeminiUsage(repairResult, {
+    feature: "decision_layer_video",
+    model: DECISION_LAYER_PRIMARY_MODEL,
+  });
+  return tryParseJsonObject(repairResult.response.text());
+}
 import Replicate from "replicate";
-import { supabase } from "@/lib/supabaseClient";
 export interface CreatorContext {
   goal?: string;
   buyer?: string;
@@ -401,8 +686,10 @@ VERDICT RULES:
 - hold-as-exploration: Average >= 35%
 - not-market-ready: Any score is 1 OR average < 35%`,
     generationConfig: {
-      maxOutputTokens: 2000,
+      maxOutputTokens: 1400,
+      temperature: 0.1,
       responseMimeType: "application/json",
+      responseSchema: videoScoresResponseSchema,
     },
   });
   const scoreResult = await scoreModel.generateContent(
@@ -413,47 +700,75 @@ VERDICT RULES:
   const text = scoreResult.response.text();
   console.log("CALL 2 RAW TEXT:", text);
   // Parse JSON with auto-repair
-  let parsed: any;
-  try {
-    const jsonStr = text
-      .replace(/```json\s*/g, "")
-      .replace(/```\s*/g, "")
-      .trim();
-    parsed = JSON.parse(jsonStr);
-  } catch {
-    // Auto-repair: extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        parsed = JSON.parse(jsonMatch[0]);
-      } catch {
-        parsed = null;
-      }
+  let parsed: any = parseStructuredJson(text);
+  if (!parsed) {
+    parsed = await repairVideoScoresJson(text);
+  }
+  if (!parsed || !Array.isArray(parsed.scores)) {
+    throw createAnalysisStageError({
+      code: "VIDEO_SCORING_PARSE_FAILED",
+      summary: "Video scoring response could not be parsed",
+      details:
+        "Gemini returned an invalid or incomplete JSON payload for the 6-axis scoring step.",
+      stage: "scoreVideoAxes",
+      rawText: text.slice(0, 4000),
+    });
+  }
+  const scores: ReadinessAxis[] = parsed.scores;
+  const expectedAxes = [...readinessAxisNames];
+  const hasAllAxes =
+    scores.length === expectedAxes.length &&
+    expectedAxes.every((axis) => scores.some((score) => score.axis === axis));
+  const hasValidScores = scores.every(
+    (score) =>
+      typeof score.score === "number" &&
+      Number.isFinite(score.score) &&
+      score.score >= 1 &&
+      score.score <= 5,
+  );
+
+  if (!hasAllAxes || !hasValidScores) {
+    const repairedParsed = await repairVideoScoresJson(text);
+    if (repairedParsed && Array.isArray(repairedParsed.scores)) {
+      parsed = repairedParsed;
     }
   }
-  if (!parsed || !parsed.scores) {
-    // Fallback scores
-  return {
-  scores: [
-    { axis: "Creative Clarity", score: 0, label: "Unscored", note: "Analysis failed — re-upload to score" },
-    { axis: "Technical Quality", score: 0, label: "Unscored", note: "Analysis failed — re-upload to score" },
-    { axis: "Consistency", score: 0, label: "Unscored", note: "Analysis failed — re-upload to score" },
-    { axis: "Audience Fit", score: 0, label: "Unscored", note: "Analysis failed — re-upload to score" },
-    { axis: "Differentiation", score: 0, label: "Unscored", note: "Analysis failed — re-upload to score" },
-    { axis: "Packaging Readiness", score: 0, label: "Unscored", note: "Analysis failed — re-upload to score" },
-  ],
-  overall: 0,
-  verdict: "not-market-ready",
-};
+
+  const repairedScores: ReadinessAxis[] = Array.isArray(parsed?.scores)
+    ? parsed.scores
+    : [];
+  const repairedHasAllAxes =
+    repairedScores.length === expectedAxes.length &&
+    expectedAxes.every((axis) =>
+      repairedScores.some((score) => score.axis === axis),
+    );
+  const repairedHasValidScores = repairedScores.every(
+    (score) =>
+      typeof score.score === "number" &&
+      Number.isFinite(score.score) &&
+      score.score >= 1 &&
+      score.score <= 5,
+  );
+
+  if (!repairedHasAllAxes || !repairedHasValidScores) {
+    throw createAnalysisStageError({
+      code: "VIDEO_SCORING_INVALID_SCHEMA",
+      summary: "Video scoring response schema was incomplete",
+      details:
+        "Gemini returned scoring JSON, but the axis list or score values were invalid.",
+      stage: "scoreVideoAxes",
+      rawText: text.slice(0, 4000),
+    });
   }
- const scores: ReadinessAxis[] = parsed.scores;
-scores.forEach((s) => {
-  s.score = Math.round((s.score / 5) * 100);
-});
-const overall = scores.reduce((sum, s) => sum + s.score, 0) / scores.length;
-return {
-  scores,
-  overall: Math.round(overall),
+
+  repairedScores.forEach((s) => {
+    s.score = Math.round((s.score / 5) * 100);
+  });
+  const overall =
+    repairedScores.reduce((sum, s) => sum + s.score, 0) / repairedScores.length;
+  return {
+    scores: repairedScores,
+    overall: Math.round(overall),
     verdict: parsed.verdict || "not-market-ready",
   };
 }
@@ -517,7 +832,9 @@ RESPOND WITH VALID JSON ONLY — no markdown, no backticks:
 }`,
     generationConfig: {
       maxOutputTokens: 2000,
+      temperature: 0.2,
       responseMimeType: "application/json",
+      responseSchema: videoCoachingResponseSchema,
     },
   });
   const coachResult = await coachModel.generateContent(
@@ -527,23 +844,7 @@ RESPOND WITH VALID JSON ONLY — no markdown, no backticks:
   logGeminiUsage(coachResult, { feature: "decision_layer_video", model: DECISION_LAYER_PRIMARY_MODEL });
   const text = coachResult.response.text();
 
-  let parsed: any;
-  try {
-    const jsonStr = text
-      .replace(/```json\s*/g, "")
-      .replace(/```\s*/g, "")
-      .trim();
-    parsed = JSON.parse(jsonStr);
-  } catch {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        parsed = JSON.parse(jsonMatch[0]);
-      } catch {
-        parsed = null;
-      }
-    }
-  }
+  const parsed: any = parseStructuredJson(text);
   if (!parsed) {
     return {
     roadmap: [
@@ -677,7 +978,9 @@ RESPOND WITH VALID JSON ONLY:
 }`,
     generationConfig: {
       maxOutputTokens: 2000,
+      temperature: 0.15,
       responseMimeType: "application/json",
+      responseSchema: videoAlignmentResponseSchema,
     },
   });
   const alignResult = await alignModel.generateContent(
@@ -687,23 +990,7 @@ RESPOND WITH VALID JSON ONLY:
   logGeminiUsage(alignResult, { feature: "decision_layer_video", model: DECISION_LAYER_PRIMARY_MODEL });
   const text = alignResult.response.text();
 
-  let parsed: any;
-  try {
-    const jsonStr = text
-      .replace(/```json\s*/g, "")
-      .replace(/```\s*/g, "")
-      .trim();
-    parsed = JSON.parse(jsonStr);
-  } catch {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        parsed = JSON.parse(jsonMatch[0]);
-      } catch {
-        parsed = null;
-      }
-    }
-  }
+  const parsed: any = parseStructuredJson(text);
 
   return {
     realAlignment: parsed?.realAlignment || {
@@ -732,20 +1019,12 @@ async function classifyMusicFromVideo(
   console.log("  → Replicate: Music classifiers on video audio track...");
 
   try {
-    // ✅ Replace with this
     const audioBuffer = Buffer.from(audioBase64, "base64");
     const fileName = `audio-${Date.now()}.mp3`;
-
-    await supabase.storage.from("audio-temp").upload(fileName, audioBuffer, {
-      contentType: mimeType,
-      upsert: true,
-    });
-
-    const { data: urlData } = supabase.storage
-      .from("audio-temp")
-      .getPublicUrl(fileName);
-    const audioUrl = urlData.publicUrl;
-    console.log("Audio URL:", audioUrl);
+    const { path: storagePath, signedUrl: audioUrl } =
+      await uploadAudioTempAndGetSignedUrl(fileName, audioBuffer, mimeType);
+    console.log("Audio temp storage path:", storagePath);
+    console.log("Audio signed URL generated for Replicate");
 
     const [classificationOutput, structureOutput] = await Promise.allSettled([
       replicate.run(

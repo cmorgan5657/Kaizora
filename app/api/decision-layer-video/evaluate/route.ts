@@ -14,6 +14,10 @@ import {
   extractAudioTrack,
 } from "../../decision-layer/utils/frame-extractor";
 import { canAfford, forceDeduct } from "@/lib/credits";
+import {
+  summarizeFiles,
+  writeDecisionLayerAnalysisLog,
+} from "@/lib/decisionLayerAnalysisLogs";
 
 const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
 
@@ -24,6 +28,9 @@ const maskSecret = (value?: string | null) => {
 };
 
 export async function POST(request: NextRequest) {
+  const startedAt = new Date().toISOString();
+  let requestSummary: Record<string, unknown> = {};
+
   try {
     const formData = await request.formData();
     const files = formData.getAll("files") as File[];
@@ -60,6 +67,15 @@ export async function POST(request: NextRequest) {
       : buildCreatorContext(contextSummary, userConcern);
     const rawClientSignals = formData.get("clientSignals") as string | null;
     const clientSignals = rawClientSignals ? JSON.parse(rawClientSignals) : [];
+    requestSummary = {
+      userId: userId || "anonymous",
+      customPrompt,
+      userConcern,
+      creatorContext,
+      contextSummary,
+      clientSignals,
+      files: summarizeFiles(files),
+    };
     if (!files.length) {
       return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
     }
@@ -315,6 +331,20 @@ demandLevel:
     console.log(`   Readiness: ${videoAnalysis.overallReadiness}%`);
     console.log(`   Verdict: ${videoAnalysis.alignmentVerdict}`);
 
+    const analysisLogFile = await writeDecisionLayerAnalysisLog({
+      route: "/api/decision-layer-video/evaluate",
+      mediaType: "video",
+      status: "success",
+      startedAt,
+      request: requestSummary,
+      responseStatus: 200,
+      result: {
+        evaluation,
+        videoAnalysis,
+        creditCost,
+      },
+    });
+
     // Deduct credits AFTER successful analysis
     if (userId && userId !== "anonymous" && creditCost > 0) {
       const deduction = await forceDeduct(
@@ -355,22 +385,42 @@ demandLevel:
         pipeline: "3-call (description → scoring → coaching)",
         frames_analyzed: videoAnalysis.frameCount,
         creator_context: creatorContext,
+        analysis_log_file: analysisLogFile,
       },
     });
   } catch (error: any) {
     console.error("❌ Video decision layer API error:", error);
     if (error?.message?.includes("Failed to parse body as FormData")) {
+      const analysisLogFile = await writeDecisionLayerAnalysisLog({
+        route: "/api/decision-layer-video/evaluate",
+        mediaType: "video",
+        status: "error",
+        startedAt,
+        request: requestSummary,
+        responseStatus: 413,
+        error,
+      });
       return NextResponse.json(
         {
           error:
             "Upload body is too large or malformed. Reduce file size and try again.",
           details:
             "Multipart form-data could not be parsed. Check proxy upload size limits.",
+          analysisLogFile,
         },
         { status: 413 },
       );
     }
     if (error?.code === "VISION_VERIFICATION_FAILED") {
+      const analysisLogFile = await writeDecisionLayerAnalysisLog({
+        route: "/api/decision-layer-video/evaluate",
+        mediaType: "video",
+        status: "error",
+        startedAt,
+        request: requestSummary,
+        responseStatus: 422,
+        error,
+      });
       return NextResponse.json(
         {
           error: error.userMessage || "Vision verification failed",
@@ -393,11 +443,106 @@ demandLevel:
                 },
               ],
             },
+            analysis_log_file: analysisLogFile,
           },
         },
         { status: 422 },
       );
     }
+    if (
+      error?.code === "VIDEO_SCORING_PARSE_FAILED" ||
+      error?.code === "VIDEO_SCORING_INVALID_SCHEMA"
+    ) {
+      const analysisLogFile = await writeDecisionLayerAnalysisLog({
+        route: "/api/decision-layer-video/evaluate",
+        mediaType: "video",
+        status: "error",
+        startedAt,
+        request: requestSummary,
+        responseStatus: 502,
+        error,
+      });
+      return NextResponse.json(
+        {
+          error: "Video scoring failed during analysis",
+          details:
+            error.details ||
+            "The model returned an invalid scoring payload for the 6-axis evaluation step.",
+          stage: error.stage || "scoreVideoAxes",
+          debug: {
+            raw_model_snippet: error.rawText || null,
+            api: {
+              provider: "Google Gemini + Replicate",
+              models: ["gemini-3.1-pro-preview"],
+              keys: [
+                {
+                  label: "GEMINI_API_KEY",
+                  masked: maskSecret(process.env.GEMINI_API_KEY),
+                },
+                {
+                  label: "REPLICATE_API_TOKEN",
+                  masked: maskSecret(process.env.REPLICATE_API_TOKEN),
+                },
+              ],
+              analysis_log_file: analysisLogFile,
+            },
+          },
+        },
+        { status: 502 },
+      );
+    }
+    if (error?.code === "MEDIA_TOOL_MISSING") {
+      const analysisLogFile = await writeDecisionLayerAnalysisLog({
+        route: "/api/decision-layer-video/evaluate",
+        mediaType: "video",
+        status: "error",
+        startedAt,
+        request: requestSummary,
+        responseStatus: 503,
+        error,
+      });
+      return NextResponse.json(
+        {
+          error: "Video analysis is not configured on this machine yet",
+          details:
+            error.message ||
+            "ffmpeg/ffprobe is required to extract frames and audio.",
+          setup: {
+            missingTool: error.tool || "ffmpeg",
+            resolvedPath: error.resolvedPath || null,
+            nextStep:
+              "Install ffmpeg and ffprobe, or set FFMPEG_PATH and FFPROBE_PATH to valid executable paths.",
+          },
+          debug: {
+            api: {
+              provider: "Google Gemini + Replicate",
+              models: ["gemini-3.1-pro-preview"],
+              keys: [
+                {
+                  label: "GEMINI_API_KEY",
+                  masked: maskSecret(process.env.GEMINI_API_KEY),
+                },
+                {
+                  label: "REPLICATE_API_TOKEN",
+                  masked: maskSecret(process.env.REPLICATE_API_TOKEN),
+                },
+              ],
+            },
+            analysis_log_file: analysisLogFile,
+          },
+        },
+        { status: 503 },
+      );
+    }
+    const analysisLogFile = await writeDecisionLayerAnalysisLog({
+      route: "/api/decision-layer-video/evaluate",
+      mediaType: "video",
+      status: "error",
+      startedAt,
+      request: requestSummary,
+      responseStatus: 500,
+      error,
+    });
     return NextResponse.json(
       {
         error: "Failed to evaluate video content",
@@ -416,6 +561,7 @@ demandLevel:
                 masked: maskSecret(process.env.REPLICATE_API_TOKEN),
               },
             ],
+            analysis_log_file: analysisLogFile,
           },
         },
       },

@@ -1,5 +1,12 @@
 import ffmpeg from "fluent-ffmpeg";
-import { createWriteStream, existsSync, mkdirSync, rmSync } from "fs";
+import {
+  accessSync,
+  constants,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  rmSync,
+} from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { readFile } from "fs/promises";
@@ -18,6 +25,27 @@ function pickExistingPath(
     if (existsSync(candidate)) return candidate;
   }
   return fallbackCommand;
+}
+
+function isUsableExecutable(commandPath: string): boolean {
+  if (!commandPath.includes("/") && !commandPath.includes("\\")) return false;
+
+  try {
+    accessSync(commandPath, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function createMediaToolError(tool: "ffmpeg" | "ffprobe", resolvedPath: string) {
+  const error = new Error(
+    `${tool} is not available for video analysis. Configure ${tool.toUpperCase()}_PATH or install ${tool} on this machine.`,
+  );
+  (error as Error & Record<string, unknown>).code = "MEDIA_TOOL_MISSING";
+  (error as Error & Record<string, unknown>).tool = tool;
+  (error as Error & Record<string, unknown>).resolvedPath = resolvedPath;
+  return error;
 }
 
 const ffmpegManualPath = resolve(
@@ -55,6 +83,30 @@ ffmpeg.setFfprobePath(ffprobeResolvedPath);
 console.log("FFmpeg path selected:", ffmpegResolvedPath);
 console.log("FFprobe path selected:", ffprobeResolvedPath);
 
+function ensureMediaTooling() {
+  if (!isUsableExecutable(ffmpegResolvedPath) && ffmpegResolvedPath === "ffmpeg") {
+    throw createMediaToolError("ffmpeg", ffmpegResolvedPath);
+  }
+
+  if (!isUsableExecutable(ffprobeResolvedPath) && ffprobeResolvedPath === "ffprobe") {
+    throw createMediaToolError("ffprobe", ffprobeResolvedPath);
+  }
+
+  if (
+    ffmpegResolvedPath !== "ffmpeg" &&
+    !isUsableExecutable(ffmpegResolvedPath)
+  ) {
+    throw createMediaToolError("ffmpeg", ffmpegResolvedPath);
+  }
+
+  if (
+    ffprobeResolvedPath !== "ffprobe" &&
+    !isUsableExecutable(ffprobeResolvedPath)
+  ) {
+    throw createMediaToolError("ffprobe", ffprobeResolvedPath);
+  }
+}
+
 export interface ExtractedFrame {
   frameNumber: number;
   timestamp: string;
@@ -66,6 +118,8 @@ export async function extractVideoFrames(
   videoName: string,
   frameCount: number = 40,
 ): Promise<{ frames: ExtractedFrame[]; duration: number; metadata: any }> {
+  ensureMediaTooling();
+
   const tempDir = join(tmpdir(), `video-analysis-${Date.now()}`);
   const videoPath = join(tempDir, videoName);
 
@@ -154,6 +208,8 @@ export async function extractAudioTrack(
   hasAudio: boolean;
   durationSeconds: number;
 }> {
+  ensureMediaTooling();
+
   const tempDir = join(tmpdir(), `audio-extract-${Date.now()}`);
   const videoPath = join(tempDir, videoName);
   const audioPath = join(tempDir, "audio.mp3");

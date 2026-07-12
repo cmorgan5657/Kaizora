@@ -7,7 +7,12 @@ import {
   analyzeAudio,
   CreatorContext,
 } from "../../../api/decision-layer/analyze/audio-analysis";
+import { uploadAudioTempAndGetSignedUrl } from "@/lib/audioTempStorage";
 import { canAfford, forceDeduct } from "@/lib/credits";
+import {
+  summarizeFiles,
+  writeDecisionLayerAnalysisLog,
+} from "@/lib/decisionLayerAnalysisLogs";
 
 const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
 
@@ -20,6 +25,9 @@ const maskSecret = (value?: string | null) => {
 export const maxDuration = 300; // 5 minutes max for audio processing
 
 export async function POST(req: NextRequest) {
+  const startedAt = new Date().toISOString();
+  let requestSummary: Record<string, unknown> = {};
+
   try {
     const formData = await req.formData();
     const files = formData.getAll("files") as File[];
@@ -99,6 +107,12 @@ export async function POST(req: NextRequest) {
     } catch {
       creatorContext = undefined;
     }
+    requestSummary = {
+      userId: userId || "anonymous",
+      customPrompt,
+      creatorContext,
+      files: summarizeFiles(files),
+    };
 
     console.log("🔊 Audio evaluation request received");
     console.log(
@@ -113,17 +127,10 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
     const mimeType = audioFile.type || "audio/mpeg";
 
-    // Upload to Supabase for a public URL (Replicate rejects data URIs)
-    const { supabase } = await import("@/lib/supabaseClient");
     const fileName = `audio-${Date.now()}.mp3`;
-    await supabase.storage.from("audio-temp").upload(fileName, buffer, {
-      contentType: mimeType,
-      upsert: true,
-    });
-    const { data: urlData } = supabase.storage
-      .from("audio-temp")
-      .getPublicUrl(fileName);
-    const audioUrl = urlData.publicUrl;
+    const { path: storagePath, signedUrl: audioUrl } =
+      await uploadAudioTempAndGetSignedUrl(fileName, buffer, mimeType);
+    console.log(`   Audio temp storage path: ${storagePath}`);
 
     // ── Get duration from client signals if available ──
     let durationSeconds = 0;
@@ -271,6 +278,22 @@ export async function POST(req: NextRequest) {
       },
     };
 
+    const analysisLogFile = await writeDecisionLayerAnalysisLog({
+      route: "/api/decision-layer-audio/evaluate",
+      mediaType: "audio",
+      status: "success",
+      startedAt,
+      request: requestSummary,
+      responseStatus: 200,
+      result: {
+        evaluation,
+        audioAnalysis,
+        audioUrl,
+        durationSeconds,
+        creditCost,
+      },
+    });
+
     // Deduct credits AFTER successful analysis
     if (userId && userId !== "anonymous" && creditCost > 0) {
       const deduction = await forceDeduct(
@@ -306,10 +329,20 @@ export async function POST(req: NextRequest) {
             },
           ],
         },
+        analysis_log_file: analysisLogFile,
       },
     });
   } catch (error: any) {
     console.error("Audio evaluation error:", error);
+    const analysisLogFile = await writeDecisionLayerAnalysisLog({
+      route: "/api/decision-layer-audio/evaluate",
+      mediaType: "audio",
+      status: "error",
+      startedAt,
+      request: requestSummary,
+      responseStatus: 500,
+      error,
+    });
     return NextResponse.json(
       {
         success: false,
@@ -328,6 +361,7 @@ export async function POST(req: NextRequest) {
                 masked: maskSecret(process.env.REPLICATE_API_TOKEN),
               },
             ],
+            analysis_log_file: analysisLogFile,
           },
         },
       },

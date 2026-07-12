@@ -256,9 +256,22 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error:
-          error?.message || "Lightweight analysis failed. Please try again.",
+          error?.code === "MEDIA_TOOL_MISSING"
+            ? "Video analysis is not configured on this machine yet."
+            : error?.message || "Lightweight analysis failed. Please try again.",
+        details:
+          error?.code === "MEDIA_TOOL_MISSING"
+            ? "Install ffmpeg and ffprobe, or set FFMPEG_PATH and FFPROBE_PATH to valid executable paths."
+            : undefined,
+        setup:
+          error?.code === "MEDIA_TOOL_MISSING"
+            ? {
+                missingTool: error.tool || "ffmpeg",
+                resolvedPath: error.resolvedPath || null,
+              }
+            : undefined,
       },
-      { status: 500 },
+      { status: error?.code === "MEDIA_TOOL_MISSING" ? 503 : 500 },
     );
   }
 }
