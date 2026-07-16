@@ -1,10 +1,13 @@
 // app/api/decision-layer/analyze/image-analysis.ts
 import { disableGeminiFallback, GoogleGenerativeAI } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
+import { getGoogleAiProviderLabel } from "@/lib/ai/provider";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
-const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genai = getGoogleAiClient();
 const DECISION_LAYER_PRIMARY_MODEL = "gemini-3.1-pro-preview";
 const DECISION_LAYER_FAST_MODEL = "gemini-3.1-flash-lite";
 const DECISION_LAYER_REQUEST_OPTIONS = disableGeminiFallback();
+const AI_PROVIDER_LABEL = getGoogleAiProviderLabel();
 export type ImageAnalysisMode = "fast" | "full";
 const DECISION_LAYER_PERSONA = `You are the KAIZORA Decision Layer, an expert AI creative evaluation and strategy system.
 Your role is not to generate content. Your role is to analyze, critique, and guide AI-generated creative work.
@@ -87,14 +90,14 @@ function safeParse(text: string) {
   try {
     return JSON.parse(text);
   } catch (e) {
-    // Gemini sometimes wraps JSON in markdown fences even with responseMimeType set
+    // The model sometimes wraps JSON in markdown fences even with responseMimeType set
     const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (fenceMatch) {
       try {
         return JSON.parse(fenceMatch[1].trim());
       } catch (e2) {
         console.error(
-          "Gemini returned invalid JSON (even after fence strip):",
+          "AI returned invalid JSON (even after fence strip):",
           text.slice(0, 500),
         );
       }
@@ -106,7 +109,7 @@ function safeParse(text: string) {
         return JSON.parse(objMatch[0]);
       } catch (e3) {
         console.error(
-          "Gemini returned invalid JSON (no valid object found):",
+          "AI returned invalid JSON (no valid object found):",
           text.slice(0, 500),
         );
       }
@@ -117,19 +120,35 @@ function safeParse(text: string) {
 
 function extractJsonStringField(text: string, field: string) {
   const escapedField = field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = text.match(
+  const strictMatch = text.match(
     new RegExp(`"${escapedField}"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"`, "s"),
   );
-  if (!match) return undefined;
-
-  try {
-    return JSON.parse(`"${match[1]}"`);
-  } catch {
-    return match[1]
-      .replace(/\\"/g, '"')
-      .replace(/\\n/g, "\n")
-      .replace(/\\\\/g, "\\");
+  if (strictMatch) {
+    try {
+      return JSON.parse(`"${strictMatch[1]}"`);
+    } catch {
+      return strictMatch[1]
+        .replace(/\\"/g, '"')
+        .replace(/\\n/g, "\n")
+        .replace(/\\\\/g, "\\");
+    }
   }
+
+  // Vertex occasionally returns truncated JSON where a long string field starts
+  // correctly but never reaches its closing quote. Recover the visible portion
+  // so downstream verification can still judge the description.
+  const partialMatch = text.match(
+    new RegExp(`"${escapedField}"\\s*:\\s*"([\\s\\S]*)$`, "s"),
+  );
+  if (!partialMatch) return undefined;
+
+  return partialMatch[1]
+    .replace(/",\s*"[^"]*"\s*:\s*[\s\S]*$/, "")
+    .replace(/"\s*}[\s\n\r\t]*$/, "")
+    .replace(/\\"/g, '"')
+    .replace(/\\n/g, "\n")
+    .replace(/\\\\/g, "\\")
+    .trim();
 }
 
 function extractJsonArrayField(text: string, field: string) {
@@ -244,16 +263,16 @@ async function generateVerifiedVisionAnalysis({
   maxAttempts?: number;
 }) {
   const statusLog: string[] = [];
-  statusLog.push("Starting Gemini Vision Analysis (6-Axis + Coaching + Pricing)...");
-  statusLog.push("Gemini Call 1: Visual Description...");
+  statusLog.push(`Starting ${AI_PROVIDER_LABEL} Vision Analysis (6-Axis + Coaching + Pricing)...`);
+  statusLog.push(`${AI_PROVIDER_LABEL} Call 1: Visual Description...`);
   const attempts = Array.from({ length: maxAttempts }, (_, index) => ({
     model: DECISION_LAYER_PRIMARY_MODEL,
     label:
       index === 0
-        ? "Gemini Call 1"
+        ? `${AI_PROVIDER_LABEL} Call 1`
         : index === 1
-          ? "Gemini Call 1 Retry"
-          : "Gemini Call 1 Fallback",
+          ? `${AI_PROVIDER_LABEL} Call 1 Retry`
+          : `${AI_PROVIDER_LABEL} Call 1 Fallback`,
     note:
       index === 0
         ? "primary attempt"
@@ -267,9 +286,9 @@ async function generateVerifiedVisionAnalysis({
   for (const attempt of attempts) {
     statusLog.push(
       `[gemini] generateContent:${DECISION_LAYER_PRIMARY_MODEL}${
-        attempt.label === "Gemini Call 1 Retry"
+        attempt.label === `${AI_PROVIDER_LABEL} Call 1 Retry`
           ? ":retry"
-          : attempt.label === "Gemini Call 1 Fallback"
+          : attempt.label === `${AI_PROVIDER_LABEL} Call 1 Fallback`
             ? ":fallback"
             : ""
       } attempt using ${attempt.model} (requested ${DECISION_LAYER_PRIMARY_MODEL})`,
@@ -299,14 +318,14 @@ async function generateVerifiedVisionAnalysis({
     if (!failure) {
       statusLog.push(
         `[gemini] generateContent:${DECISION_LAYER_PRIMARY_MODEL}${
-          attempt.label === "Gemini Call 1 Retry"
+          attempt.label === `${AI_PROVIDER_LABEL} Call 1 Retry`
             ? ":retry"
-            : attempt.label === "Gemini Call 1 Fallback"
+            : attempt.label === `${AI_PROVIDER_LABEL} Call 1 Fallback`
               ? ":final-retry"
               : ""
         } success using ${attempt.model}`,
       );
-      statusLog.push(`Gemini Call 1 complete with ${attempt.model}.`);
+      statusLog.push(`${AI_PROVIDER_LABEL} Call 1 complete with ${attempt.model}.`);
       console.log(`  ✓ ${attempt.label} complete with ${attempt.model}`);
       return {
         analysis,
@@ -816,7 +835,7 @@ export async function analyzeImage(
   analysisMode: ImageAnalysisMode = "full",
 ): Promise<ImageAnalysisResult> {
   console.log(
-    "🎨 Starting Gemini Vision Analysis (6-Axis + Coaching + Pricing)...",
+    `🎨 Starting ${AI_PROVIDER_LABEL} Vision Analysis (6-Axis + Coaching + Pricing)...`,
   );
   // Convert image to base64
   const bytes = await imageFile.arrayBuffer();
@@ -842,7 +861,7 @@ For example:
   // ═══════════════════════════════════════════════════════
   // CALL 1: Visual Description + Basic Analysis
   // ═══════════════════════════════════════════════════════
-  console.log("  → Gemini Call 1: Visual Description...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 1: Visual Description...`);
   const descriptionPrompt = `${DECISION_LAYER_PERSONA}
 
 ${VISION_GUARDRAIL}
@@ -887,7 +906,7 @@ Write like a professional visual consultant advising a client. Stay objective, d
   console.log("  ✓ Call 1 complete — visual description done");
 
   if (analysisMode === "fast") {
-    console.log("  → Gemini Fast Call 2: Scoring + Alignment + Pricing...");
+    console.log(`  → ${AI_PROVIDER_LABEL} Fast Call 2: Scoring + Alignment + Pricing...`);
     const fastPrompt = `${DECISION_LAYER_PERSONA}
 
 Creator knowledge tier: ${knowledgeTier}
@@ -959,10 +978,10 @@ Respond in this EXACT JSON:
         },
         parts: [{ text: fastPrompt }],
         feature: "decision_layer_image",
-        stageLabel: "Gemini Fast Call 2",
+        stageLabel: `${AI_PROVIDER_LABEL} Fast Call 2`,
       });
-    statusLog.push("Gemini Fast Call 2: Scoring + Alignment + Pricing...");
-    statusLog.push(`Gemini Fast Call 2 complete with ${fastModelUsed}.`);
+    statusLog.push(`${AI_PROVIDER_LABEL} Fast Call 2: Scoring + Alignment + Pricing...`);
+    statusLog.push(`${AI_PROVIDER_LABEL} Fast Call 2 complete with ${fastModelUsed}.`);
     const fastData = safeParse(fastResult.response.text());
     const axisScores = fastData.scores || {};
     Object.keys(axisScores).forEach((key) => {
@@ -1075,7 +1094,7 @@ Respond in this EXACT JSON:
   // ═══════════════════════════════════════════════════════
   // CALL 2: 6-Axis Readiness Scoring
   // ═══════════════════════════════════════════════════════
-  console.log("  → Gemini Call 2: 6-Axis Readiness Scoring...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 2: 6-Axis Readiness Scoring...`);
   const scoringPrompt = `${DECISION_LAYER_PERSONA}
 
 Creator knowledge tier: ${knowledgeTier}
@@ -1116,10 +1135,10 @@ Respond in this EXACT JSON:
     },
     parts: [{ text: scoringPrompt }],
     feature: "decision_layer_image",
-    stageLabel: "Gemini Call 2",
+    stageLabel: `${AI_PROVIDER_LABEL} Call 2`,
   });
-  statusLog.push("Gemini Call 2: 6-Axis Readiness Scoring...");
-  statusLog.push(`Gemini Call 2 complete with ${call2ModelUsed}.`);
+  statusLog.push(`${AI_PROVIDER_LABEL} Call 2: 6-Axis Readiness Scoring...`);
+  statusLog.push(`${AI_PROVIDER_LABEL} Call 2 complete with ${call2ModelUsed}.`);
   const rawCall2 = call2Result.response.text();
   console.log(
     "  Call 2 raw response (first 300 chars):",
@@ -1172,7 +1191,7 @@ Respond in this EXACT JSON:
   // ═══════════════════════════════════════════════════════
   // CALL 2.5: Real Alignment + Exact Edits + Fastest Path
   // ═══════════════════════════════════════════════════════
-  console.log("  → Gemini Call 2.5: Alignment + Edits + Path...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 2.5: Alignment + Edits + Path...`);
 
   const alignmentPrompt = `${DECISION_LAYER_PERSONA}
 
@@ -1245,8 +1264,8 @@ Respond in this EXACT JSON:
     DECISION_LAYER_REQUEST_OPTIONS,
   );
   logGeminiUsage(call25Result, { feature: "decision_layer_image", model: DECISION_LAYER_PRIMARY_MODEL });
-  statusLog.push("Gemini Call 2.5: Alignment + Edits + Path...");
-  statusLog.push(`Gemini Call 2.5 complete with ${DECISION_LAYER_PRIMARY_MODEL}.`);
+  statusLog.push(`${AI_PROVIDER_LABEL} Call 2.5: Alignment + Edits + Path...`);
+  statusLog.push(`${AI_PROVIDER_LABEL} Call 2.5 complete with ${DECISION_LAYER_PRIMARY_MODEL}.`);
   const alignmentData = safeParse(call25Result.response.text());
   if (alignmentData.realAlignment?.score) {
     alignmentData.realAlignment.score = Math.round(
@@ -1257,7 +1276,7 @@ Respond in this EXACT JSON:
   // ═══════════════════════════════════════════════════════
   // CALL 3: Coaching Roadmap + Tiered Pricing
   // ═══════════════════════════════════════════════════════
-  console.log("  → Gemini Call 3: Coaching Roadmap + Pricing...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 3: Coaching Roadmap + Pricing...`);
   const coachingPrompt = `${DECISION_LAYER_PERSONA}
 
 Creator knowledge tier: ${knowledgeTier}
@@ -1350,10 +1369,10 @@ Respond in this EXACT JSON:
     },
     parts: [{ text: coachingPrompt }],
     feature: "decision_layer_image",
-    stageLabel: "Gemini Call 3",
+    stageLabel: `${AI_PROVIDER_LABEL} Call 3`,
   });
-  statusLog.push("Gemini Call 3: Coaching Roadmap + Pricing...");
-  statusLog.push(`Gemini Call 3 complete with ${call3ModelUsed}.`);
+  statusLog.push(`${AI_PROVIDER_LABEL} Call 3: Coaching Roadmap + Pricing...`);
+  statusLog.push(`${AI_PROVIDER_LABEL} Call 3 complete with ${call3ModelUsed}.`);
   const coachingData = safeParse(call3Result.response.text());
   console.log("  ✓ Call 3 complete — coaching + pricing done");
   // Build coaching roadmap with defaults

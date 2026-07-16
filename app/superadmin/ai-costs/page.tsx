@@ -112,12 +112,14 @@ function pageForFeature(feature: string): string {
   return FEATURE_TO_PAGE[feature] || "other";
 }
 
-type ProviderKey = "gemini" | "fal" | "replicate" | "elevenlabs";
+type ProviderKey = "gemini" | "vertex" | "fal" | "replicate" | "elevenlabs";
 
 const MODEL_LABELS: Record<string, { name: string; provider: ProviderKey; color: string }> = {
   // Gemini
   "gemini-3.1-flash-lite": { name: "Gemini 3.1 Flash Lite", provider: "gemini", color: "#8b5cf6" },
   "gemini-3.1-pro-preview": { name: "Gemini 3.1 Pro Preview", provider: "gemini", color: "#a78bfa" },
+  "vertex:gemini-3.1-flash-lite": { name: "Vertex Gemini 3.1 Flash Lite", provider: "vertex", color: "#0ea5e9" },
+  "vertex:gemini-3.1-pro-preview": { name: "Vertex Gemini 3.1 Pro Preview", provider: "vertex", color: "#38bdf8" },
   // ElevenLabs
   "eleven_multilingual_v2": { name: "Eleven Multilingual v2", provider: "elevenlabs", color: "#22d3ee" },
   // Fal.ai
@@ -150,11 +152,26 @@ const MODEL_LABELS: Record<string, { name: string; provider: ProviderKey; color:
 };
 
 function modelMeta(model: string) {
-  return MODEL_LABELS[model] || { name: model, provider: (model.includes("gemini") ? "gemini" : model.startsWith("eleven_") ? "elevenlabs" : model.startsWith("fal-ai") || model.startsWith("bytedance/seedance") ? "fal" : "replicate") as ProviderKey, color: "#6b7280" };
+  return MODEL_LABELS[model] || {
+    name: model,
+    provider: (
+      model.startsWith("vertex:")
+        ? "vertex"
+        : model.includes("gemini")
+          ? "gemini"
+          : model.startsWith("eleven_")
+            ? "elevenlabs"
+            : model.startsWith("fal-ai") || model.startsWith("bytedance/seedance")
+              ? "fal"
+              : "replicate"
+    ) as ProviderKey,
+    color: "#6b7280",
+  };
 }
 
 const PROVIDER_LABELS: Record<string, { name: string; color: string; bg: string }> = {
   gemini: { name: "Gemini", color: "#a78bfa", bg: "bg-violet-500/15" },
+  vertex: { name: "Vertex AI", color: "#38bdf8", bg: "bg-sky-500/15" },
   fal: { name: "Fal.ai", color: "#f97316", bg: "bg-orange-500/15" },
   replicate: { name: "Replicate", color: "#3b82f6", bg: "bg-blue-500/15" },
   elevenlabs: { name: "ElevenLabs", color: "#22d3ee", bg: "bg-cyan-500/15" },
@@ -163,6 +180,7 @@ const PROVIDER_LABELS: Record<string, { name: string; color: string; bg: string 
 // Provider billing dashboards — for quick redirect / copy from the pricing menu.
 const PROVIDER_DASHBOARDS: Record<string, string> = {
   gemini: "https://aistudio.google.com/usage",
+  vertex: "https://console.cloud.google.com/vertex-ai",
   fal: "https://fal.ai/dashboard/usage-billing",
   replicate: "https://replicate.com/account/billing",
   elevenlabs: "https://elevenlabs.io/app/usage",
@@ -174,6 +192,8 @@ const MODEL_PRICE_INFO: Record<string, ModelPriceInfo> = {
   // Gemini (per-token billing)
   "gemini-3.1-flash-lite": { price: "$0.075 / $0.30", unit: "per 1M input / output tokens" },
   "gemini-3.1-pro-preview": { price: "$1.25 / $10", unit: "per 1M input / output tokens" },
+  "vertex:gemini-3.1-flash-lite": { price: "$0.075 / $0.30", unit: "per 1M input / output tokens" },
+  "vertex:gemini-3.1-pro-preview": { price: "$1.25 / $10", unit: "per 1M input / output tokens" },
   // ElevenLabs
   "eleven_multilingual_v2": { price: "$0.10", unit: "per 1K characters" },
   // Fal.ai

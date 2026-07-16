@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = getGoogleAiClient();
 
 // Trim to last complete sentence so responses never end mid-word
 function trimToCompleteSentence(text: string): string {

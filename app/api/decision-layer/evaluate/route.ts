@@ -15,12 +15,18 @@ import {
   writeDecisionLayerAnalysisLog,
 } from "@/lib/decisionLayerAnalysisLogs";
 import { shouldExposeDebugUi } from "@/lib/debugLogs";
+import { getGoogleAiProviderDebugLabel, isVertexProvider } from "@/lib/ai/provider";
 
 const maskSecret = (value?: string | null) => {
   if (!value) return "Not configured";
   if (value.length <= 8) return `${value.slice(0, 2)}***${value.slice(-2)}`;
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
 };
+
+const GOOGLE_AI_DEBUG_LABEL = getGoogleAiProviderDebugLabel();
+const GOOGLE_AI_KEY_LABEL = isVertexProvider()
+  ? "GOOGLE_CLOUD_CREDENTIALS_JSON / vertex-api-file.json"
+  : "GEMINI_API_KEY";
 
 export async function POST(request: NextRequest) {
   const exposeDebugUi = shouldExposeDebugUi("KAIZORA_LOG_GEMINI", false);
@@ -354,15 +360,17 @@ export async function POST(request: NextRequest) {
                 imageAnalysis.evidenceDetails?.modelUsed ||
                 "gemini-3.1-pro-preview",
               api: {
-                provider: "Google Gemini",
+                provider: GOOGLE_AI_DEBUG_LABEL,
                 models: imageAnalysis.evidenceDetails?.modelUsed
                   ? imageAnalysis.evidenceDetails.modelUsed.split(" -> ")
                   : ["gemini-3.1-pro-preview"],
                 statusLog: imageAnalysis.evidenceDetails?.statusLog || [],
                 keys: [
                   {
-                    label: "GEMINI_API_KEY",
-                    masked: maskSecret(process.env.GEMINI_API_KEY),
+                    label: GOOGLE_AI_KEY_LABEL,
+                    masked: isVertexProvider()
+                      ? "Configured via Vertex credentials"
+                      : maskSecret(process.env.GEMINI_API_KEY),
                   },
                 ],
               },
@@ -400,12 +408,14 @@ export async function POST(request: NextRequest) {
             ? {
                 debug: {
                   api: {
-                    provider: "Google Gemini",
+                    provider: GOOGLE_AI_DEBUG_LABEL,
                     models: ["gemini-3.1-pro-preview"],
                     keys: [
                       {
-                        label: "GEMINI_API_KEY",
-                        masked: maskSecret(process.env.GEMINI_API_KEY),
+                        label: GOOGLE_AI_KEY_LABEL,
+                        masked: isVertexProvider()
+                          ? "Configured via Vertex credentials"
+                          : maskSecret(process.env.GEMINI_API_KEY),
                       },
                     ],
                     analysis_log_file: analysisLogFile,
@@ -434,12 +444,14 @@ export async function POST(request: NextRequest) {
           ? {
               debug: {
                 api: {
-                  provider: "Google Gemini",
+                  provider: GOOGLE_AI_DEBUG_LABEL,
                   models: ["gemini-3.1-pro-preview"],
                   keys: [
                     {
-                      label: "GEMINI_API_KEY",
-                      masked: maskSecret(process.env.GEMINI_API_KEY),
+                      label: GOOGLE_AI_KEY_LABEL,
+                      masked: isVertexProvider()
+                        ? "Configured via Vertex credentials"
+                        : maskSecret(process.env.GEMINI_API_KEY),
                     },
                   ],
                   analysis_log_file: analysisLogFile,

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 import {
   COMMERCE_PERSONA,
@@ -11,7 +11,7 @@ import {
   fallbackVerdict,
 } from "./types";
 
-const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genai = getGoogleAiClient();
 
 const IMAGE_AXES: Record<string, string> = {
   creativeClarity:     "Creative Clarity",

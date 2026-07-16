@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 import {
@@ -6,7 +7,7 @@ import {
   extractAudioTrack,
 } from "@/app/api/decision-layer/utils/frame-extractor";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = getGoogleAiClient();
 
 // Multimodal model — handles images, video frames and audio.
 const MODEL = "gemini-3.1-flash-lite";

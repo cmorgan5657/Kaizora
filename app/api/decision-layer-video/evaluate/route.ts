@@ -19,9 +19,14 @@ import {
   writeDecisionLayerAnalysisLog,
 } from "@/lib/decisionLayerAnalysisLogs";
 import { shouldExposeDebugUi } from "@/lib/debugLogs";
+import { getGoogleAiProviderDebugLabel, isVertexProvider } from "@/lib/ai/provider";
 import { maskSecret } from "@/lib/replicateDebug";
 
 const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
+const GOOGLE_AI_DEBUG_LABEL = getGoogleAiProviderDebugLabel();
+const GOOGLE_AI_KEY_LABEL = isVertexProvider()
+  ? "GOOGLE_CLOUD_CREDENTIALS_JSON / vertex-api-file.json"
+  : "GEMINI_API_KEY";
 
 export async function POST(request: NextRequest) {
   const exposeDebugUi = shouldExposeDebugUi("KAIZORA_LOG_GEMINI", false);
@@ -372,12 +377,14 @@ demandLevel:
               video_analysis: videoAnalysis,
               models_used: ["gemini-3.1-pro-preview"],
               api: {
-                provider: "Google Gemini + Replicate",
+                provider: `${GOOGLE_AI_DEBUG_LABEL} + Replicate`,
                 models: ["gemini-3.1-pro-preview"],
                 keys: [
                   {
-                    label: "GEMINI_API_KEY",
-                    masked: maskSecret(process.env.GEMINI_API_KEY),
+                    label: GOOGLE_AI_KEY_LABEL,
+                    masked: isVertexProvider()
+                      ? "Configured via Vertex credentials"
+                      : maskSecret(process.env.GEMINI_API_KEY),
                   },
                   {
                     label: "REPLICATE_API_TOKEN",
@@ -437,12 +444,14 @@ demandLevel:
             ? {
                 debug: {
                   api: {
-                    provider: "Google Gemini + Replicate",
+                    provider: `${GOOGLE_AI_DEBUG_LABEL} + Replicate`,
                     models: ["gemini-3.1-pro-preview"],
                     keys: [
                       {
-                        label: "GEMINI_API_KEY",
-                        masked: maskSecret(process.env.GEMINI_API_KEY),
+                        label: GOOGLE_AI_KEY_LABEL,
+                        masked: isVertexProvider()
+                          ? "Configured via Vertex credentials"
+                          : maskSecret(process.env.GEMINI_API_KEY),
                       },
                       {
                         label: "REPLICATE_API_TOKEN",
@@ -483,12 +492,14 @@ demandLevel:
                 debug: {
                   raw_model_snippet: error.rawText || null,
                   api: {
-                    provider: "Google Gemini + Replicate",
+                    provider: `${GOOGLE_AI_DEBUG_LABEL} + Replicate`,
                     models: ["gemini-3.1-pro-preview"],
                     keys: [
                       {
-                        label: "GEMINI_API_KEY",
-                        masked: maskSecret(process.env.GEMINI_API_KEY),
+                        label: GOOGLE_AI_KEY_LABEL,
+                        masked: isVertexProvider()
+                          ? "Configured via Vertex credentials"
+                          : maskSecret(process.env.GEMINI_API_KEY),
                       },
                       {
                         label: "REPLICATE_API_TOKEN",
@@ -530,12 +541,14 @@ demandLevel:
             ? {
                 debug: {
                   api: {
-                    provider: "Google Gemini + Replicate",
+                    provider: `${GOOGLE_AI_DEBUG_LABEL} + Replicate`,
                     models: ["gemini-3.1-pro-preview"],
                     keys: [
                       {
-                        label: "GEMINI_API_KEY",
-                        masked: maskSecret(process.env.GEMINI_API_KEY),
+                        label: GOOGLE_AI_KEY_LABEL,
+                        masked: isVertexProvider()
+                          ? "Configured via Vertex credentials"
+                          : maskSecret(process.env.GEMINI_API_KEY),
                       },
                       {
                         label: "REPLICATE_API_TOKEN",
@@ -568,12 +581,14 @@ demandLevel:
           ? {
               debug: {
                 api: {
-                  provider: "Google Gemini + Replicate",
+                  provider: `${GOOGLE_AI_DEBUG_LABEL} + Replicate`,
                   models: ["gemini-3.1-pro-preview"],
                   keys: [
                     {
-                      label: "GEMINI_API_KEY",
-                      masked: maskSecret(process.env.GEMINI_API_KEY),
+                      label: GOOGLE_AI_KEY_LABEL,
+                      masked: isVertexProvider()
+                        ? "Configured via Vertex credentials"
+                        : maskSecret(process.env.GEMINI_API_KEY),
                     },
                     {
                       label: "REPLICATE_API_TOKEN",

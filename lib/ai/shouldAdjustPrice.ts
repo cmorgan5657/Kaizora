@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = getGoogleAiClient();
 const MODEL = "gemini-3.1-pro-preview";
 
 export async function getDemandScore(asset: {

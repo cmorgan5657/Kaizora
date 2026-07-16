@@ -1,11 +1,14 @@
 // app/api/decision-layer/analyze/text-analysis.ts
-// KAIZORA Text Intelligence — 3-call Gemini pipeline for written content evaluation
+// KAIZORA Text Intelligence — 3-call Google AI pipeline for written content evaluation
 import { disableGeminiFallback, GoogleGenerativeAI } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
+import { getGoogleAiProviderLabel } from "@/lib/ai/provider";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 
-const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genai = getGoogleAiClient();
 const DECISION_LAYER_PRIMARY_MODEL = "gemini-3.1-pro-preview";
 const DECISION_LAYER_REQUEST_OPTIONS = disableGeminiFallback();
+const AI_PROVIDER_LABEL = getGoogleAiProviderLabel();
 
 const DECISION_LAYER_PERSONA = `You are the KAIZORA Decision Layer, an expert AI creative evaluation and strategy system.
 Your role is not to generate content. Your role is to analyze, critique, and guide AI-generated creative work.
@@ -341,7 +344,7 @@ For example:
   // ═══════════════════════════════════════════════════════
   // CALL 1: Text Description + Basic Analysis
   // ═══════════════════════════════════════════════════════
-  console.log("  → Gemini Call 1: Text Description...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 1: Text Description...`);
   const descriptionPrompt = `${DECISION_LAYER_PERSONA}
 
 ${TEXT_GUARDRAIL}
@@ -410,7 +413,7 @@ Write like a professional editorial consultant advising a client. Stay objective
   // ═══════════════════════════════════════════════════════
   // CALL 2: 6-Axis Readiness Scoring
   // ═══════════════════════════════════════════════════════
-  console.log("  → Gemini Call 2: 6-Axis Readiness Scoring...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 2: 6-Axis Readiness Scoring...`);
   const scoringPrompt = `${DECISION_LAYER_PERSONA}
 
 Creator knowledge tier: ${knowledgeTier}
@@ -507,7 +510,7 @@ Respond in this EXACT JSON:
   // ═══════════════════════════════════════════════════════
   // CALL 2.5: Real Alignment + Exact Edits + Fastest Path
   // ═══════════════════════════════════════════════════════
-  console.log("  → Gemini Call 2.5: Alignment + Edits + Path...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 2.5: Alignment + Edits + Path...`);
 
   const alignmentPrompt = `${DECISION_LAYER_PERSONA}
 
@@ -588,7 +591,7 @@ Respond in this EXACT JSON:
   // ═══════════════════════════════════════════════════════
   // CALL 3: Coaching Roadmap + Tiered Pricing
   // ═══════════════════════════════════════════════════════
-  console.log("  → Gemini Call 3: Coaching Roadmap + Pricing...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 3: Coaching Roadmap + Pricing...`);
   const coachingPrompt = `${DECISION_LAYER_PERSONA}
 
 Creator knowledge tier: ${knowledgeTier}

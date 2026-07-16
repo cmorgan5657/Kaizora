@@ -3,6 +3,7 @@ import Replicate from "replicate";
 import { fal } from "@fal-ai/client";
 
 import { GoogleGenerativeAI } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 import { logFalUsage, logReplicateUsage } from "@/lib/ai/genUsage";
 import sharp from "sharp";
@@ -22,7 +23,7 @@ function trackReplicateUsage(modelId: string, _amount: number, meta: any = {}) {
 }
 
 const GEMINI_MODEL = "gemini-3.1-pro-preview";
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = getGoogleAiClient();
 
 // Thin helper that mimics openai.chat.completions.create for simple text exchanges.
 async function geminiChat(

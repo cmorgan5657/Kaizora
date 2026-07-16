@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 import {
   COMMERCE_PERSONA,
@@ -16,7 +17,7 @@ import {
   extractAudioTrack,
 } from "@/app/api/decision-layer/utils/frame-extractor";
 
-const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genai = getGoogleAiClient();
 const MARKETPLACE_ANALYSIS_MODEL = "gemini-3.1-pro-preview";
 const MARKETPLACE_SUPPORT_MODEL = "gemini-3.1-flash-lite";
 

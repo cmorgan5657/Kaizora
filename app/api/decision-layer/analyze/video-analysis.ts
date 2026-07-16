@@ -4,10 +4,11 @@ import {
   SchemaType,
   type Schema,
 } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 import { uploadAudioTempAndGetSignedUrl } from "@/lib/audioTempStorage";
 import { logReplicateError, maskSecret } from "@/lib/replicateDebug";
-const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genai = getGoogleAiClient();
 const DECISION_LAYER_PRIMARY_MODEL = "gemini-3.1-pro-preview";
 const DECISION_LAYER_REQUEST_OPTIONS = disableGeminiFallback();
 const DECISION_LAYER_PERSONA = `You are the KAIZORA Decision Layer, an expert AI creative evaluation and strategy system.

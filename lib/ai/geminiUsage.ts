@@ -28,6 +28,7 @@
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { serverLog } from "@/lib/debugLogs";
 import { getGeminiTrace } from "@/lib/ai/gemini";
+import { logVertexUsage } from "@/lib/ai/vertexUsage";
 
 // ── Per-model pricing (USD per 1,000,000 tokens) ──────────────────────────────
 // UPDATE THESE in one place if Google changes preview pricing.
@@ -170,6 +171,11 @@ export async function logGeminiUsage(
   meta: GeminiUsageMeta,
 ): Promise<void> {
   try {
+    if (source?.__provider === "vertex" || source?.response?.__provider === "vertex") {
+      await logVertexUsage(source, meta);
+      return;
+    }
+
     const usage = extractUsage(source);
     if (!usage) return; // nothing to log
 

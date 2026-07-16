@@ -203,6 +203,79 @@ type CommerceBucketItem = {
   pending?: CommercePendingEntry;
 };
 
+function inferMarketplaceContentType(
+  mimeType?: string | null,
+  fileName?: string | null,
+  fallback?: string | null,
+) {
+  const mime = (mimeType || "").toLowerCase();
+  const name = (fileName || "").toLowerCase();
+  const fallbackValue = (fallback || "").toLowerCase();
+
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
+  if (
+    mime.includes("pdf") ||
+    name.endsWith(".pdf") ||
+    fallbackValue === "pdf"
+  ) {
+    return "pdf";
+  }
+  if (
+    mime.startsWith("text/") ||
+    [
+      ".txt",
+      ".md",
+      ".rtf",
+      ".doc",
+      ".docx",
+      ".json",
+      ".csv",
+    ].some((ext) => name.endsWith(ext))
+  ) {
+    return "text";
+  }
+  if (
+    [
+      ".js",
+      ".ts",
+      ".tsx",
+      ".jsx",
+      ".py",
+      ".java",
+      ".cpp",
+      ".c",
+      ".cs",
+      ".rb",
+      ".php",
+      ".swift",
+      ".kt",
+      ".go",
+      ".rs",
+      ".sql",
+      ".html",
+      ".css",
+    ].some((ext) => name.endsWith(ext))
+  ) {
+    return "code";
+  }
+  if (fallbackValue) return fallbackValue;
+  return "other";
+}
+
+function formatMarketplaceContentTypeLabel(value?: string | null) {
+  const normalized = (value || "other").toLowerCase();
+  if (normalized === "pdf") return "PDF";
+  if (normalized === "code") return "Code";
+  if (normalized === "text") return "Text";
+  if (normalized === "audio") return "Audio";
+  if (normalized === "video") return "Video";
+  if (normalized === "image") return "Image";
+  if (normalized === "prompt") return "Prompt";
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
 function upsertRowById<T extends { id: string }>(rows: T[], nextRow: T) {
   const next = [nextRow, ...rows.filter((row) => row.id !== nextRow.id)];
   next.sort((a: any, b: any) => {
@@ -1223,6 +1296,11 @@ export default function MarketplacePage() {
     existing?: CommercePendingEntry,
   ): CommercePendingEntry {
     const cachedMeta = tempMetaCache[tempAsset.id];
+    const inferredContentType = inferMarketplaceContentType(
+      tempAsset.mime_type,
+      tempAsset.storage_path,
+      tempAsset.content_type,
+    );
     const meta: CommerceMeta = existing?.meta ||
       cachedMeta || {
         title: tempAsset.title ?? "Untitled",
@@ -1232,11 +1310,11 @@ export default function MarketplacePage() {
         isFree: true,
         priceCents: 0,
         tags: tempAsset.tags ?? [],
-        contentType: tempAsset.content_type ?? "other",
+        contentType: formatMarketplaceContentTypeLabel(inferredContentType),
         preview:
           tempStorageUrl(tempAsset.thumbnail_path || tempAsset.storage_path) ??
           null,
-        imageFit: tempAsset.content_type === "image" ? "contain" : "cover",
+        imageFit: inferredContentType === "image" ? "contain" : "cover",
       };
 
     const score = tempAsset.readiness_score ?? null;
@@ -1663,9 +1741,14 @@ export default function MarketplacePage() {
         : null,
     });
     try {
+      const actualContentType = inferMarketplaceContentType(
+        uploadFile.type,
+        uploadFile.name,
+        uploadContentType,
+      );
       const { imageFit } = await validateUploadFile(
         uploadFile,
-        uploadContentType,
+        actualContentType,
       );
       const fileSize = uploadFile.size;
       const ext = uploadFile.name.split(".").pop();
@@ -1681,9 +1764,9 @@ export default function MarketplacePage() {
           user_id: user.id,
           title: uploadTitle.trim(),
           description: uploadDesc.trim(),
-          content_type: uploadContentType.toLowerCase(),
+          content_type: actualContentType,
           storage_path: fileName,
-          thumbnail_path: uploadFile.type.startsWith("image/")
+          thumbnail_path: actualContentType === "image"
             ? fileName
             : null,
           mime_type: uploadFile.type || null,
@@ -1705,7 +1788,7 @@ export default function MarketplacePage() {
           ? 0
           : Math.round(parseFloat(uploadPrice || "0") * 100),
         tags: [...uploadTags],
-        contentType: uploadContentType,
+        contentType: formatMarketplaceContentTypeLabel(actualContentType),
         preview: uploadFilePreview || tempStorageUrl(fileName),
         imageFit,
       };
@@ -1792,7 +1875,11 @@ export default function MarketplacePage() {
             };
       setPendingAnalyses((prev) => ({
         ...prev,
-        [tempAssetId]: { analyzing: false, profile, meta },
+        [tempAssetId]: {
+          analyzing: false,
+          profile,
+          meta,
+        },
       }));
 
       if ((profile.commerce_readiness_score ?? 0) > 80) {
@@ -1802,7 +1889,11 @@ export default function MarketplacePage() {
           tempAssetId,
           true,
           true,
-          { analyzing: false, profile, meta },
+          {
+            analyzing: false,
+            profile,
+            meta,
+          },
         );
         if (published) {
           setReportToast("Asset auto-published with AI suggestions.");
@@ -2053,12 +2144,10 @@ export default function MarketplacePage() {
       };
       logServer("quickPublish:update:start", { finalAssetId, updatePayload });
       // Publish the asset directly — no listings row. Apply AI-suggested metadata.
-      const { data: publishedAsset, error: publishErr } = await supabase
+      const { error: publishErr } = await supabase
         .from("assets")
         .update(updatePayload)
-        .eq("id", finalAssetId)
-        .select("*")
-        .single();
+        .eq("id", finalAssetId);
       if (publishErr) {
         logServer("quickPublish:update:error", {
           message: publishErr.message,
@@ -2073,15 +2162,15 @@ export default function MarketplacePage() {
         finalAssetId,
         moderationStatus: "pending",
       });
-      if (publishedAsset) {
-        setMyAssets((prev) =>
-          upsertRowById(prev, {
-            ...publishedAsset,
-            is_public: false,
-            moderation_status: "pending",
-          }),
-        );
-      }
+      setMyAssets((prev) =>
+        upsertRowById(prev, {
+          ...(prev.find((asset) => asset.id === finalAssetId) || {}),
+          id: finalAssetId,
+          ...updatePayload,
+          is_public: false,
+          moderation_status: "pending",
+        }),
+      );
       if (tempAsset) {
         cleanupTempAssetLocally(assetId);
         logServer("quickPublish:cleanup:done", { assetId, mode: "local" });
@@ -2149,31 +2238,30 @@ export default function MarketplacePage() {
       }
 
       // Publish the asset directly — no listings row. Use the user's original metadata.
-      const { data: publishedAsset, error: publishErr } = await supabase
+      const updatePayload = {
+        is_public: false,
+        moderation_status: "pending",
+        title: meta.title,
+        description: meta.desc,
+        ai_model: meta.aiModel,
+        tags: meta.tags,
+        price_cents: meta.priceCents,
+      };
+      const { error: publishErr } = await supabase
         .from("assets")
-        .update({
-          is_public: false,
-          moderation_status: "pending",
-          title: meta.title,
-          description: meta.desc,
-          ai_model: meta.aiModel,
-          tags: meta.tags,
-          price_cents: meta.priceCents,
-        })
-        .eq("id", finalAssetId)
-        .select("id, is_public, moderation_status")
-        .single();
+        .update(updatePayload)
+        .eq("id", finalAssetId);
       if (publishErr) throw publishErr;
       await ensurePaidAssetLicense(finalAssetId, licenseChoice, meta.priceCents);
-      if (publishedAsset) {
-        setMyAssets((prev) =>
-          upsertRowById(prev, {
-            ...publishedAsset,
-            is_public: false,
-            moderation_status: "pending",
-          }),
-        );
-      }
+      setMyAssets((prev) =>
+        upsertRowById(prev, {
+          ...(prev.find((asset) => asset.id === finalAssetId) || {}),
+          id: finalAssetId,
+          ...updatePayload,
+          is_public: false,
+          moderation_status: "pending",
+        }),
+      );
       if (tempAsset) {
         cleanupTempAssetLocally(assetId);
       } else {
@@ -3860,7 +3948,6 @@ export default function MarketplacePage() {
                       </p>
                     </div>
                   </div>
-
                   {/* Fields */}
                   <div className="px-5 pb-4">
                     <Field label="Title" my={myTitle || <span className="italic text-gray-600">empty</span>} ai={aiTitle} />
@@ -4535,6 +4622,11 @@ function CommerceAnalysisCard({
   const resolvedUrl = asset.is_temp
     ? `${SUPABASE_URL}/storage/v1/object/public/asset-temp/${asset.storage_path}`
     : storageUrl(asset.thumbnail_path || asset.storage_path);
+  const effectiveContentType = inferMarketplaceContentType(
+    asset.mime_type,
+    asset.storage_path || asset.thumbnail_path,
+    meta.contentType,
+  );
   // Use meta.preview only if it's not a dead blob URL
   const previewUrl =
     meta.preview && !meta.preview.startsWith("blob:") ? meta.preview : null;
@@ -4592,9 +4684,7 @@ function CommerceAnalysisCard({
     >
       {/* ── Thumbnail ── */}
       <div className="relative aspect-[16/9] bg-[#0b0b0b] overflow-hidden flex-shrink-0">
-        {meta.contentType?.toLowerCase() === "video" &&
-        !asset.thumbnail_path &&
-        imageUrl ? (
+        {effectiveContentType === "video" && !asset.thumbnail_path && imageUrl ? (
           <video
             src={imageUrl}
             className="w-full h-full object-cover"
@@ -4606,7 +4696,7 @@ function CommerceAnalysisCard({
               (e.target as HTMLVideoElement).pause();
             }}
           />
-        ) : meta.contentType?.toLowerCase() === "audio" ? (
+        ) : effectiveContentType === "audio" ? (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3 px-4">
             <div className="w-12 h-12 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center flex-shrink-0">
               <svg
@@ -4628,8 +4718,8 @@ function CommerceAnalysisCard({
               style={{ colorScheme: "dark" }}
             />
           </div>
-        ) : meta.contentType?.toLowerCase() === "text" ||
-          meta.contentType?.toLowerCase() === "pdf" ? (
+        ) : effectiveContentType === "text" ||
+          effectiveContentType === "pdf" ? (
           <div className="w-full h-full flex flex-col items-center justify-center gap-2">
             <div className="w-10 h-10 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center">
               <svg
@@ -4730,10 +4820,9 @@ function CommerceAnalysisCard({
             {meta.title}
           </p>
           <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-white/[0.06] text-[9px] text-gray-500 capitalize mt-0.5">
-            {meta.contentType}
+            {formatMarketplaceContentTypeLabel(effectiveContentType)}
           </span>
         </div>
-
         {/* ── Analyzing skeleton ── */}
         {analyzing && (
           <div className="space-y-2 mt-1">

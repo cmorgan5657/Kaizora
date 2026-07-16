@@ -1,0 +1,581 @@
+{
+  "route": "/api/decision-layer/evaluate",
+  "mediaType": "image",
+  "status": "success",
+  "startedAt": "2026-07-16T15:57:18.438Z",
+  "endedAt": "2026-07-16T15:57:44.801Z",
+  "durationMs": 26363,
+  "responseStatus": 200,
+  "request": {
+    "userId": "3ff838fe-be89-43e9-9484-39395772f89f",
+    "customPrompt": null,
+    "analysisMode": "fast",
+    "userConcern": "general",
+    "creatorContext": {
+      "goal": "monetize",
+      "buyer": "product",
+      "mediaType": "images",
+      "timeConstraint": "under-1-hour",
+      "qualityLevel": "learning",
+      "blocker": "not-knowing-next"
+    },
+    "contextSummary": "Quality → Monetize → Product → Images → Under 1 Hour → Learning → Don't Know What's Next",
+    "clientSignals": [],
+    "files": [
+      {
+        "name": "1782510538601-4c30b2cf-1684-4b97-b586-077abc7557ab.png",
+        "type": "image/png",
+        "sizeBytes": 2253465,
+        "sizeMB": 2.15,
+        "lastModified": 1784217438441
+      }
+    ]
+  },
+  "result": {
+    "evaluation": {
+      "decision": "not-yet",
+      "title": "Almost There — Quick Improvements Needed",
+      "honestAssessment": "A light golden retriever puppy is captured mid-stride running directly toward the viewer on a vibrant green lawn. The puppy's mouth is open, revealing a pink tongue, and its dark brown eyes have clear catchlights. Its right front paw is raised, showing dark paw pads, while the tail extends upward to the right. The foreground features sharp blades of grass with scattered small white clover flowers. The background consists of heavily blurred, dark green foliage and trees, indicating a shallow depth of field. Lighting is bright and warm, originating from the upper left, casting soft shadows to the lower right. undefined",
+      "evidenceUsed": [
+        "The subject is center-weighted within the frame, utilizing a low, eye-level camera angle to create intimacy. A shallow depth of field isolates the puppy from the background, forcing the viewer's focus onto the face. Leading lines are minimal, but the raised paw and upward tail create a diagonal balance across the subject's body.",
+        null,
+        null
+      ],
+      "worthIt": {
+        "verdict": "maybe",
+        "explanation": "Overall readiness: 67%. You said \"not-knowing-next\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks the character sheet or seed consistency required for a product line."
+      },
+      "readinessScores": [
+        {
+          "axis": "Creative Clarity",
+          "score": 100,
+          "note": "The subject and action are perfectly defined and visually coherent."
+        },
+        {
+          "axis": "Technical Quality",
+          "score": 80,
+          "note": "High fidelity, though standard stock-style imagery lacks unique artistic signature."
+        },
+        {
+          "axis": "Consistency Control",
+          "score": 40,
+          "note": "Single-image output lacks the character sheet or seed consistency required for a product line."
+        },
+        {
+          "axis": "Audience Fit",
+          "score": 80,
+          "note": "High demand for 'cute pet' content in stock photography and social media."
+        },
+        {
+          "axis": "Differentiation",
+          "score": 40,
+          "note": "The aesthetic is indistinguishable from thousands of existing AI-generated puppy images."
+        },
+        {
+          "axis": "Packaging Readiness",
+          "score": 60,
+          "note": "Technically clean but lacks the thematic branding needed for a cohesive product."
+        }
+      ],
+      "overallReadiness": 67,
+      "alignmentVerdict": "monetize-with-fixes",
+      "coachingRoadmap": [
+        {
+          "title": "Quick Wins",
+          "timeEstimate": "20-30 minutes",
+          "actions": [
+            "Define a specific target audience",
+            "Batch generate 5 images with consistent lighting",
+            "Apply a uniform filter/preset"
+          ]
+        },
+        {
+          "title": "Level Up",
+          "timeEstimate": "60-90 minutes",
+          "actions": [
+            "Learn seed-locking for character consistency",
+            "Develop a simple brand style guide"
+          ]
+        },
+        {
+          "title": "Market Ready",
+          "timeEstimate": "Later",
+          "actions": [
+            "Build a portfolio site",
+            "Research trending keywords on Adobe Stock/Shutterstock"
+          ]
+        }
+      ],
+      "pricingGuidance": {
+        "tiers": [
+          {
+            "tier": "Starter",
+            "range": "$5-$10",
+            "justification": "Value scales with the utility of the asset for the buyer's specific project needs.",
+            "includes": [
+              "Single high-res image",
+              "Personal use license"
+            ]
+          },
+          {
+            "tier": "Standard",
+            "range": "$25-$40",
+            "justification": "Value scales with the utility of the asset for the buyer's specific project needs.",
+            "includes": [
+              "5-image collection",
+              "Commercial use license"
+            ]
+          },
+          {
+            "tier": "Premium",
+            "range": "$75-$150",
+            "justification": "Value scales with the utility of the asset for the buyer's specific project needs.",
+            "includes": [
+              "Full collection + source files",
+              "Exclusive commercial rights"
+            ]
+          }
+        ],
+        "currentTier": "Starter",
+        "currentRange": "$5-$10",
+        "potentialRange": "$75-$150",
+        "rationale": "Value scales with the utility of the asset for the buyer's specific project needs."
+      },
+      "topPainPoint": "You said \"not-knowing-next\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks the character sheet or seed consistency required for a product line.",
+      "whereToStart": {
+        "priority": "Define a specific target audience",
+        "steps": [
+          "Define a specific target audience",
+          "Batch generate 5 images with consistent lighting",
+          "Apply a uniform filter/preset"
+        ]
+      },
+      "contentCritique": {
+        "strengths": [
+          "Creative Clarity: The subject and action are perfectly defined and visually coherent.",
+          "Technical Quality: High fidelity, though standard stock-style imagery lacks unique artistic signature.",
+          "Audience Fit: High demand for 'cute pet' content in stock photography and social media."
+        ],
+        "weaknesses": [
+          "Consistency Control (40%): Single-image output lacks the character sheet or seed consistency required for a product line.",
+          "Differentiation (40%): The aesthetic is indistinguishable from thousands of existing AI-generated puppy images.",
+          "Packaging Readiness (60%): Technically clean but lacks the thematic branding needed for a cohesive product."
+        ],
+        "improvements": [
+          "Define a specific target audience",
+          "Batch generate 5 images with consistent lighting",
+          "Apply a uniform filter/preset"
+        ]
+      },
+      "nextSteps": [
+        "Define a specific target audience",
+        "Batch generate 5 images with consistent lighting",
+        "Learn seed-locking for character consistency",
+        "Re-analyze after improvements"
+      ],
+      "realTalk": "67% overall readiness. undefined You said \"not-knowing-next\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks the character sheet or seed consistency required for a product line.",
+      "KAIZORAStrategy": {
+        "strategyType": "Improve first, then publish",
+        "features": [
+          "High-quality preview",
+          "Detailed metadata",
+          "Multiple licensing tiers"
+        ],
+        "rationale": "Focus on Quick Wins before publishing."
+      },
+      "marketReality": {
+        "demand": "medium",
+        "competition": "medium",
+        "analysis": "You said \"not-knowing-next\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks the character sheet or seed consistency required for a product line."
+      },
+      "whatISaw": {
+        "subjects": "A light golden retriever puppy is captured mid-stride running directly toward the viewer on a vibrant green lawn. The puppy's mouth is open, revealing a pink tongue, and its dark brown eyes have clear catchlights. Its right front paw is raised, showing dark paw pads, while the tail extends upward to the right. The foreground features sharp blades of grass with scattered small white clover flowers. The background consists of heavily blurred, dark green foliage and trees, indicating a shallow depth of field. Lighting is bright and warm, originating from the upper left, casting soft shadows to the lower right.",
+        "lighting": "See technical assessment",
+        "color": "See technical assessment",
+        "composition": "The subject is center-weighted within the frame, utilizing a low, eye-level camera angle to create intimacy. A shallow depth of field isolates the puppy from the background, forcing the viewer's focus onto the face. Leading lines are minimal, but the raised paw and upward tail create a diagonal balance across the subject's body.",
+        "mood": "See visual description"
+      },
+      "whatYouToldMe": {
+        "goal": "monetize",
+        "pain": "not-knowing-next",
+        "constraints": "under-1-hour",
+        "buyerType": "product"
+      },
+      "realAlignment": {
+        "score": 4,
+        "gapSummary": "The image is a high-quality asset but lacks a commercial narrative or brand identity. It is a 'pretty picture' rather than a 'product' with a target market.",
+        "blindSpots": [
+          "Lack of brand narrative",
+          "No consideration for licensing/usage rights",
+          "Absence of a series-based strategy"
+        ]
+      },
+      "myRecommendation": {
+        "verdict": "Refine",
+        "reasoning": "You said \"not-knowing-next\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks the character sheet or seed consistency required for a product line. Overall readiness: 67%."
+      },
+      "exactEdits": [
+        {
+          "edit": "Apply a consistent color grade (LUT) to the image.",
+          "why": "Establishes a signature look that differentiates your brand from raw AI output.",
+          "effort": "Quick"
+        },
+        {
+          "edit": "Add a subtle, non-intrusive watermark or brand element.",
+          "why": "Protects intellectual property and builds brand recognition.",
+          "effort": "Quick"
+        },
+        {
+          "edit": "Generate 5 variations with the same puppy in different environments.",
+          "why": "Creates a 'collection' rather than a single image, increasing value for buyers.",
+          "effort": "Medium"
+        }
+      ],
+      "honestPricing": {
+        "low": 5,
+        "high": 50,
+        "currency": "USD",
+        "reasoning": "Stock photography is a volume game; individual images have low value unless part of a high-demand set.",
+        "comparable": "Adobe Stock contributor pricing"
+      },
+      "fastestPath": [
+        {
+          "step": "Define a specific niche (e.g., 'Puppy Training Tips' or 'Pet Wellness').",
+          "timeEstimate": "10 minutes"
+        },
+        {
+          "step": "Create a 5-image set using consistent character seeds.",
+          "timeEstimate": "30 minutes"
+        },
+        {
+          "step": "Upload to a microstock site or create a digital download pack.",
+          "timeEstimate": "20 minutes"
+        }
+      ],
+      "evidenceDetails": {
+        "fileCount": 1,
+        "resolution": "auto-detected",
+        "framesAnalyzed": 1,
+        "modelUsed": "gemini-3.1-pro-preview -> gemini-3.1-flash-lite",
+        "analysisTimestamp": "2026-07-16T15:57:44.798Z",
+        "signalsSummary": "No client signals",
+        "statusLog": [
+          "Starting Gemini Vision Analysis (6-Axis + Coaching + Pricing)...",
+          "Gemini Call 1: Visual Description...",
+          "[gemini] generateContent:gemini-3.1-pro-preview attempt using gemini-3.1-pro-preview (requested gemini-3.1-pro-preview)",
+          "[gemini] generateContent:gemini-3.1-pro-preview success using gemini-3.1-pro-preview",
+          "Gemini Call 1 complete with gemini-3.1-pro-preview.",
+          "Gemini Fast Call 2: Scoring + Alignment + Pricing...",
+          "Gemini Fast Call 2 complete with gemini-3.1-flash-lite."
+        ]
+      },
+      "analysisStatusLog": [
+        "Starting Gemini Vision Analysis (6-Axis + Coaching + Pricing)...",
+        "Gemini Call 1: Visual Description...",
+        "[gemini] generateContent:gemini-3.1-pro-preview attempt using gemini-3.1-pro-preview (requested gemini-3.1-pro-preview)",
+        "[gemini] generateContent:gemini-3.1-pro-preview success using gemini-3.1-pro-preview",
+        "Gemini Call 1 complete with gemini-3.1-pro-preview.",
+        "Gemini Fast Call 2: Scoring + Alignment + Pricing...",
+        "Gemini Fast Call 2 complete with gemini-3.1-flash-lite."
+      ],
+      "closingQuestion": "Are you planning to sell this as a standalone stock asset or as part of a larger branded content series?",
+      "fallbackEvaluation": {
+        "vision_evidence": "A light golden retriever puppy is captured mid-stride running directly toward the viewer on a vibrant green lawn. The puppy's mouth is open, revealing a pink tongue, and its dark brown eyes have clear catchlights. Its right front paw is raised, showing dark paw pads, while the tail extends upward to the right. The foreground features sharp blades of grass with scattered small white clover flowers. The background consists of heavily blurred, dark green foliage and trees, indicating a shallow depth of field. Lighting is bright and warm, originating from the upper left, casting soft shadows to the lower right.",
+        "decision": "FLAG",
+        "confidence": 67,
+        "scores": {
+          "technical_quality": 80,
+          "market_fit": 80,
+          "policy_risk": 0,
+          "originality": 40
+        },
+        "reasons": [],
+        "recommended_fixes": [],
+        "marketplace_recommendation": {
+          "should_list": true,
+          "category": "images",
+          "title": "monetize Asset — 67% Market Ready",
+          "tags": [
+            "product",
+            "monetize",
+            "digital asset"
+          ],
+          "price_range": "$5-$10",
+          "next_step": "Define a specific target audience"
+        }
+      }
+    },
+    "imageAnalysis": {
+      "gemini_analysis": {
+        "quality_score": 60,
+        "what_i_see": "A light golden retriever puppy is captured mid-stride running directly toward the viewer on a vibrant green lawn. The puppy's mouth is open, revealing a pink tongue, and its dark brown eyes have clear catchlights. Its right front paw is raised, showing dark paw pads, while the tail extends upward to the right. The foreground features sharp blades of grass with scattered small white clover flowers. The background consists of heavily blurred, dark green foliage and trees, indicating a shallow depth of field. Lighting is bright and warm, originating from the upper left, casting soft shadows to the lower right.",
+        "composition": "The subject is center-weighted within the frame, utilizing a low, eye-level camera angle to create intimacy. A shallow depth of field isolates the puppy from the background, forcing the viewer's focus onto the face. Leading lines are minimal, but the raised paw and upward tail create a diagonal balance across the subject's body."
+      },
+      "readinessScore": {
+        "creativeClarity": {
+          "score": 100,
+          "justification": "The subject and action are perfectly defined and visually coherent."
+        },
+        "technicalQuality": {
+          "score": 80,
+          "justification": "High fidelity, though standard stock-style imagery lacks unique artistic signature."
+        },
+        "consistencyControl": {
+          "score": 40,
+          "justification": "Single-image output lacks the character sheet or seed consistency required for a product line."
+        },
+        "audienceFit": {
+          "score": 80,
+          "justification": "High demand for 'cute pet' content in stock photography and social media."
+        },
+        "differentiation": {
+          "score": 40,
+          "justification": "The aesthetic is indistinguishable from thousands of existing AI-generated puppy images."
+        },
+        "packagingReadiness": {
+          "score": 60,
+          "justification": "Technically clean but lacks the thematic branding needed for a cohesive product."
+        },
+        "total": 67
+      },
+      "coachingRoadmap": [
+        {
+          "title": "Quick Wins",
+          "timeEstimate": "20-30 minutes",
+          "actions": [
+            "Define a specific target audience",
+            "Batch generate 5 images with consistent lighting",
+            "Apply a uniform filter/preset"
+          ]
+        },
+        {
+          "title": "Level Up",
+          "timeEstimate": "60-90 minutes",
+          "actions": [
+            "Learn seed-locking for character consistency",
+            "Develop a simple brand style guide"
+          ]
+        },
+        {
+          "title": "Market Ready",
+          "timeEstimate": "Later",
+          "actions": [
+            "Build a portfolio site",
+            "Research trending keywords on Adobe Stock/Shutterstock"
+          ]
+        }
+      ],
+      "tieredPricing": {
+        "starter": {
+          "label": "Starter",
+          "range": "$5-$10",
+          "includes": [
+            "Single high-res image",
+            "Personal use license"
+          ]
+        },
+        "standard": {
+          "label": "Standard",
+          "range": "$25-$40",
+          "includes": [
+            "5-image collection",
+            "Commercial use license"
+          ]
+        },
+        "premium": {
+          "label": "Premium",
+          "range": "$75-$150",
+          "includes": [
+            "Full collection + source files",
+            "Exclusive commercial rights"
+          ]
+        },
+        "upgradeJustification": "Value scales with the utility of the asset for the buyer's specific project needs."
+      },
+      "consensus": {
+        "overall_quality": "good",
+        "monetization_readiness": "needs-refinement",
+        "confidence": 67
+      },
+      "overallReadiness": 67,
+      "alignmentVerdict": "monetize-with-fixes",
+      "readinessScores": [
+        {
+          "axis": "Creative Clarity",
+          "score": 100,
+          "note": "The subject and action are perfectly defined and visually coherent."
+        },
+        {
+          "axis": "Technical Quality",
+          "score": 80,
+          "note": "High fidelity, though standard stock-style imagery lacks unique artistic signature."
+        },
+        {
+          "axis": "Consistency Control",
+          "score": 40,
+          "note": "Single-image output lacks the character sheet or seed consistency required for a product line."
+        },
+        {
+          "axis": "Audience Fit",
+          "score": 80,
+          "note": "High demand for 'cute pet' content in stock photography and social media."
+        },
+        {
+          "axis": "Differentiation",
+          "score": 40,
+          "note": "The aesthetic is indistinguishable from thousands of existing AI-generated puppy images."
+        },
+        {
+          "axis": "Packaging Readiness",
+          "score": 60,
+          "note": "Technically clean but lacks the thematic branding needed for a cohesive product."
+        }
+      ],
+      "pricingTiers": [
+        {
+          "tier": "Starter",
+          "range": "$5-$10",
+          "justification": "Value scales with the utility of the asset for the buyer's specific project needs.",
+          "includes": [
+            "Single high-res image",
+            "Personal use license"
+          ]
+        },
+        {
+          "tier": "Standard",
+          "range": "$25-$40",
+          "justification": "Value scales with the utility of the asset for the buyer's specific project needs.",
+          "includes": [
+            "5-image collection",
+            "Commercial use license"
+          ]
+        },
+        {
+          "tier": "Premium",
+          "range": "$75-$150",
+          "justification": "Value scales with the utility of the asset for the buyer's specific project needs.",
+          "includes": [
+            "Full collection + source files",
+            "Exclusive commercial rights"
+          ]
+        }
+      ],
+      "topPainPoint": "You said \"not-knowing-next\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks the character sheet or seed consistency required for a product line.",
+      "visualDescription": "A light golden retriever puppy is captured mid-stride running directly toward the viewer on a vibrant green lawn. The puppy's mouth is open, revealing a pink tongue, and its dark brown eyes have clear catchlights. Its right front paw is raised, showing dark paw pads, while the tail extends upward to the right. The foreground features sharp blades of grass with scattered small white clover flowers. The background consists of heavily blurred, dark green foliage and trees, indicating a shallow depth of field. Lighting is bright and warm, originating from the upper left, casting soft shadows to the lower right.",
+      "evidenceUsed": [
+        "The subject is center-weighted within the frame, utilizing a low, eye-level camera angle to create intimacy. A shallow depth of field isolates the puppy from the background, forcing the viewer's focus onto the face. Leading lines are minimal, but the raised paw and upward tail create a diagonal balance across the subject's body.",
+        null,
+        null
+      ],
+      "whatISaw": {
+        "subjects": "A light golden retriever puppy is captured mid-stride running directly toward the viewer on a vibrant green lawn. The puppy's mouth is open, revealing a pink tongue, and its dark brown eyes have clear catchlights. Its right front paw is raised, showing dark paw pads, while the tail extends upward to the right. The foreground features sharp blades of grass with scattered small white clover flowers. The background consists of heavily blurred, dark green foliage and trees, indicating a shallow depth of field. Lighting is bright and warm, originating from the upper left, casting soft shadows to the lower right.",
+        "lighting": "See technical assessment",
+        "color": "See technical assessment",
+        "composition": "The subject is center-weighted within the frame, utilizing a low, eye-level camera angle to create intimacy. A shallow depth of field isolates the puppy from the background, forcing the viewer's focus onto the face. Leading lines are minimal, but the raised paw and upward tail create a diagonal balance across the subject's body.",
+        "mood": "See visual description"
+      },
+      "whatYouToldMe": {
+        "goal": "monetize",
+        "pain": "not-knowing-next",
+        "constraints": "under-1-hour",
+        "buyerType": "product"
+      },
+      "realAlignment": {
+        "score": 4,
+        "gapSummary": "The image is a high-quality asset but lacks a commercial narrative or brand identity. It is a 'pretty picture' rather than a 'product' with a target market.",
+        "blindSpots": [
+          "Lack of brand narrative",
+          "No consideration for licensing/usage rights",
+          "Absence of a series-based strategy"
+        ]
+      },
+      "myRecommendation": {
+        "verdict": "Refine",
+        "reasoning": "You said \"not-knowing-next\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks the character sheet or seed consistency required for a product line. Overall readiness: 67%."
+      },
+      "exactEdits": [
+        {
+          "edit": "Apply a consistent color grade (LUT) to the image.",
+          "why": "Establishes a signature look that differentiates your brand from raw AI output.",
+          "effort": "Quick"
+        },
+        {
+          "edit": "Add a subtle, non-intrusive watermark or brand element.",
+          "why": "Protects intellectual property and builds brand recognition.",
+          "effort": "Quick"
+        },
+        {
+          "edit": "Generate 5 variations with the same puppy in different environments.",
+          "why": "Creates a 'collection' rather than a single image, increasing value for buyers.",
+          "effort": "Medium"
+        }
+      ],
+      "honestPricing": {
+        "low": 5,
+        "high": 50,
+        "currency": "USD",
+        "reasoning": "Stock photography is a volume game; individual images have low value unless part of a high-demand set.",
+        "comparable": "Adobe Stock contributor pricing"
+      },
+      "fastestPath": [
+        {
+          "step": "Define a specific niche (e.g., 'Puppy Training Tips' or 'Pet Wellness').",
+          "timeEstimate": "10 minutes"
+        },
+        {
+          "step": "Create a 5-image set using consistent character seeds.",
+          "timeEstimate": "30 minutes"
+        },
+        {
+          "step": "Upload to a microstock site or create a digital download pack.",
+          "timeEstimate": "20 minutes"
+        }
+      ],
+      "evidenceDetails": {
+        "fileCount": 1,
+        "resolution": "auto-detected",
+        "framesAnalyzed": 1,
+        "modelUsed": "gemini-3.1-pro-preview -> gemini-3.1-flash-lite",
+        "analysisTimestamp": "2026-07-16T15:57:44.798Z",
+        "signalsSummary": "No client signals",
+        "statusLog": [
+          "Starting Gemini Vision Analysis (6-Axis + Coaching + Pricing)...",
+          "Gemini Call 1: Visual Description...",
+          "[gemini] generateContent:gemini-3.1-pro-preview attempt using gemini-3.1-pro-preview (requested gemini-3.1-pro-preview)",
+          "[gemini] generateContent:gemini-3.1-pro-preview success using gemini-3.1-pro-preview",
+          "Gemini Call 1 complete with gemini-3.1-pro-preview.",
+          "Gemini Fast Call 2: Scoring + Alignment + Pricing...",
+          "Gemini Fast Call 2 complete with gemini-3.1-flash-lite."
+        ]
+      },
+      "closingQuestion": "Are you planning to sell this as a standalone stock asset or as part of a larger branded content series?",
+      "fallbackEvaluation": {
+        "vision_evidence": "A light golden retriever puppy is captured mid-stride running directly toward the viewer on a vibrant green lawn. The puppy's mouth is open, revealing a pink tongue, and its dark brown eyes have clear catchlights. Its right front paw is raised, showing dark paw pads, while the tail extends upward to the right. The foreground features sharp blades of grass with scattered small white clover flowers. The background consists of heavily blurred, dark green foliage and trees, indicating a shallow depth of field. Lighting is bright and warm, originating from the upper left, casting soft shadows to the lower right.",
+        "decision": "FLAG",
+        "confidence": 67,
+        "scores": {
+          "technical_quality": 80,
+          "market_fit": 80,
+          "policy_risk": 0,
+          "originality": 40
+        },
+        "reasons": [],
+        "recommended_fixes": [],
+        "marketplace_recommendation": {
+          "should_list": true,
+          "category": "images",
+          "title": "monetize Asset — 67% Market Ready",
+          "tags": [
+            "product",
+            "monetize",
+            "digital asset"
+          ],
+          "price_range": "$5-$10",
+          "next_step": "Define a specific target audience"
+        }
+      }
+    },
+    "creditCost": 10
+  },
+  "error": null
+}

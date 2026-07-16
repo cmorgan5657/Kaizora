@@ -6,8 +6,10 @@ import { analyzeAudioCommerce } from "@/app/api/marketplace/analyze/audio-analys
 import { analyzeTextCommerce } from "@/app/api/marketplace/analyze/text-analysis";
 import type { CommerceAnalysisResult } from "@/app/api/marketplace/analyze/types";
 import { serverLog } from "@/lib/debugLogs";
+import { getGoogleAiProviderDebugLabel } from "@/lib/ai/provider";
 
 export const maxDuration = 300;
+const GOOGLE_AI_DEBUG_LABEL = getGoogleAiProviderDebugLabel();
 
 async function markTempAsset(
   id: string | null,
@@ -104,6 +106,7 @@ export async function POST(req: NextRequest) {
         readiness_axes:                    result.readiness_axes,
       },
       debug: {
+        provider: GOOGLE_AI_DEBUG_LABEL,
         models_used: modelsUsed,
         tempAssetId,
       },

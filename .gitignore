@@ -3,3 +3,5 @@ node_modules/
 package-lock.json
 pnpm-lock.yaml.next/
 .env
+vertex-api-file.json
+gen-lang-client-*.json

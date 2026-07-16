@@ -14,9 +14,14 @@ import {
   writeDecisionLayerAnalysisLog,
 } from "@/lib/decisionLayerAnalysisLogs";
 import { shouldExposeDebugUi } from "@/lib/debugLogs";
+import { getGoogleAiProviderDebugLabel, isVertexProvider } from "@/lib/ai/provider";
 import { maskSecret } from "@/lib/replicateDebug";
 
 const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
+const GOOGLE_AI_DEBUG_LABEL = getGoogleAiProviderDebugLabel();
+const GOOGLE_AI_KEY_LABEL = isVertexProvider()
+  ? "GOOGLE_CLOUD_CREDENTIALS_JSON / vertex-api-file.json"
+  : "GEMINI_API_KEY";
 
 export const maxDuration = 300; // 5 minutes max for audio processing
 
@@ -319,12 +324,14 @@ export async function POST(req: NextRequest) {
         ? {
             debug: {
               api: {
-                provider: "Google Gemini + Replicate",
+                provider: `${GOOGLE_AI_DEBUG_LABEL} + Replicate`,
                 models: ["gemini-3.1-pro-preview"],
                 keys: [
                   {
-                    label: "GEMINI_API_KEY",
-                    masked: maskSecret(process.env.GEMINI_API_KEY),
+                    label: GOOGLE_AI_KEY_LABEL,
+                    masked: isVertexProvider()
+                      ? "Configured via Vertex credentials"
+                      : maskSecret(process.env.GEMINI_API_KEY),
                   },
                   {
                     label: "REPLICATE_API_TOKEN",
@@ -356,12 +363,14 @@ export async function POST(req: NextRequest) {
           ? {
               debug: {
                 api: {
-                  provider: "Google Gemini + Replicate",
+                  provider: `${GOOGLE_AI_DEBUG_LABEL} + Replicate`,
                   models: ["gemini-3.1-pro-preview"],
                   keys: [
                     {
-                      label: "GEMINI_API_KEY",
-                      masked: maskSecret(process.env.GEMINI_API_KEY),
+                      label: GOOGLE_AI_KEY_LABEL,
+                      masked: isVertexProvider()
+                        ? "Configured via Vertex credentials"
+                        : maskSecret(process.env.GEMINI_API_KEY),
                     },
                     {
                       label: "REPLICATE_API_TOKEN",

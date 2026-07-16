@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGeminiTrace, GoogleGenerativeAI } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 import { serverLog } from "@/lib/debugLogs";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = getGoogleAiClient();
 const MARKETPLACE_ASSISTANT_MODEL = "gemini-3.1-flash-lite";
 
 function trimToCompleteSentence(text: string): string {

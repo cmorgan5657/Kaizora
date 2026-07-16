@@ -1,9 +1,12 @@
 import { disableGeminiFallback, GoogleGenerativeAI } from "@/lib/ai/gemini";
+import { getGoogleAiClient } from "@/lib/ai/googleClient";
+import { getGoogleAiProviderLabel } from "@/lib/ai/provider";
 import { logGeminiUsage } from "@/lib/ai/geminiUsage";
 import { logReplicateError, maskSecret } from "@/lib/replicateDebug";
-const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genai = getGoogleAiClient();
 const DECISION_LAYER_PRIMARY_MODEL = "gemini-3.1-pro-preview";
 const DECISION_LAYER_REQUEST_OPTIONS = disableGeminiFallback();
+const AI_PROVIDER_LABEL = getGoogleAiProviderLabel();
 const DECISION_LAYER_PERSONA = `You are the KAIZORA Decision Layer, an expert AI creative evaluation and strategy system.
 Your role is not to generate content. Your role is to analyze, critique, and guide AI-generated creative work.
 You function as a world-class AI creative director and technical content expert with deep expertise in:
@@ -456,13 +459,13 @@ async function analyzeStructure(
 }
 
 // ═══════════════════════════════════════════════════════
-// WHISPER: Speech Transcription
+// AI: Speech Transcription
 // ═══════════════════════════════════════════════════════
 
 async function transcribeSpeech(
   audioFile: File,
 ): Promise<{ hasSpeech: boolean; transcript: string }> {
-  console.log("  → Gemini: Speech transcription...");
+  console.log(`  → ${AI_PROVIDER_LABEL}: Speech transcription...`);
 
   try {
     const bytes = await audioFile.arrayBuffer();
@@ -484,7 +487,7 @@ async function transcribeSpeech(
     const hasSpeech = transcript.trim().length > 10;
 
   console.log(
-  `  ✓ Gemini transcription done — ${hasSpeech ? "speech detected" : "no speech"} (${transcript.length} chars)`,
+  `  ✓ ${AI_PROVIDER_LABEL} transcription done — ${hasSpeech ? "speech detected" : "no speech"} (${transcript.length} chars)`,
 );
 
     return {
@@ -498,7 +501,7 @@ async function transcribeSpeech(
 }
 
 // ═══════════════════════════════════════════════════════
-// GPT-4o CALL 1: Audio Description
+// AI CALL 1: Audio Description
 // ═══════════════════════════════════════════════════════
 
 async function describeAudio(
@@ -508,7 +511,7 @@ async function describeAudio(
   creatorContext?: CreatorContext,
   knowledgeTier?: string,
 ): Promise<{ description: string; whatIHeard: WhatIHeard }> {
-  console.log("  → GPT-4o Call 1: Audio description from ML data...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 1: Audio description from ML data...`);
 
   const contextSection = creatorContext
     ? `\nCREATOR CONTEXT:
@@ -608,7 +611,7 @@ Respond in this EXACT JSON:
 }
 
 // ═══════════════════════════════════════════════════════
-// GPT-4o CALL 2: 6-Axis Audio Scoring
+// AI CALL 2: 6-Axis Audio Scoring
 // ═══════════════════════════════════════════════════════
 async function scoreAudioAxes(
   description: string,
@@ -618,7 +621,7 @@ async function scoreAudioAxes(
   creatorContext?: CreatorContext,
   knowledgeTier?: string,
 ): Promise<ReadinessScore> {
-  console.log("  → GPT-4o Call 2: 6-Axis Audio Scoring...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 2: 6-Axis Audio Scoring...`);
 
   const contextSection = creatorContext
     ? `\nCREATOR CONTEXT:
@@ -737,7 +740,7 @@ Respond in this EXACT JSON:
 }
 
 // ═══════════════════════════════════════════════════════
-// GPT-4o CALL 2.5: Alignment + Edits + Path
+// AI CALL 2.5: Alignment + Edits + Path
 // ═══════════════════════════════════════════════════════
 
 async function generateAudioAlignmentAndEdits(
@@ -752,7 +755,7 @@ async function generateAudioAlignmentAndEdits(
   exactEdits: ExactEdit[];
   fastestPath: FastestPathStep[];
 }> {
-  console.log("  → GPT-4o Call 2.5: Alignment + Edits + Path...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 2.5: Alignment + Edits + Path...`);
 
   const contextSection = creatorContext
     ? `\nCREATOR CONTEXT:
@@ -848,7 +851,7 @@ console.log("  ✓ Call 2.5 complete — alignment + edits + path done");
 }
 
 // ═══════════════════════════════════════════════════════
-// GPT-4o CALL 3: Coaching + Pricing
+// AI CALL 3: Coaching + Pricing
 // ═══════════════════════════════════════════════════════
 
 async function generateAudioCoachingAndPricing(
@@ -864,7 +867,7 @@ async function generateAudioCoachingAndPricing(
   honestPricing: HonestPricing;
   topPainPoint: string;
 }> {
-  console.log("  → GPT-4o Call 3: Audio coaching + pricing...");
+  console.log(`  → ${AI_PROVIDER_LABEL} Call 3: Audio coaching + pricing...`);
 
   const contextSection = creatorContext
     ? `\nCREATOR CONTEXT:
@@ -1053,7 +1056,7 @@ const knowledgeTier =
 if (classification.genres.length === 0 && structure.bpm === 0) {
   throw new Error("NEEDS_REVIEW: ML models returned no data — confidence 0. Re-upload audio in MP3 or WAV format.");
 }
-  // ═══ GPT-4o Call 1: Description ═══
+  // ═══ AI Call 1: Description ═══
   const { description, whatIHeard } = await describeAudio(
     classification,
     structure,
@@ -1062,7 +1065,7 @@ if (classification.genres.length === 0 && structure.bpm === 0) {
     knowledgeTier
   );
 
-  // ═══ GPT-4o Call 2: 6-Axis Scoring ═══
+  // ═══ AI Call 2: 6-Axis Scoring ═══
   const readinessScore = await scoreAudioAxes(
     description,
     classification,
@@ -1072,7 +1075,7 @@ if (classification.genres.length === 0 && structure.bpm === 0) {
     knowledgeTier
   );
 
-  // ═══ GPT-4o Call 2.5: Alignment + Edits ═══
+  // ═══ AI Call 2.5: Alignment + Edits ═══
   const { realAlignment, exactEdits, fastestPath } =
     await generateAudioAlignmentAndEdits(
       description,
@@ -1083,7 +1086,7 @@ if (classification.genres.length === 0 && structure.bpm === 0) {
       knowledgeTier
     );
 
-  // ═══ GPT-4o Call 3: Coaching + Pricing ═══
+  // ═══ AI Call 3: Coaching + Pricing ═══
   const { coachingRoadmap, tieredPricing, honestPricing, topPainPoint } =
     await generateAudioCoachingAndPricing(
       description,
