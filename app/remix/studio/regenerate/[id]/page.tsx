@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -100,6 +100,10 @@ export default function RegenerateStudio() {
   const agentInputRef = useRef<HTMLTextAreaElement>(null);
   const greetingFired = useRef(false);
   const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const uploadedPreviewUrls = useMemo(
+    () => uploadedFiles.map((file) => URL.createObjectURL(file)),
+    [uploadedFiles],
+  );
 
   useEffect(() => {
     async function loadAsset() {
@@ -482,6 +486,13 @@ export default function RegenerateStudio() {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 140)}px`;
   }, [agentInput]);
   useEffect(() => {
+    return () => {
+      uploadedPreviewUrls.forEach((previewUrl) => {
+        URL.revokeObjectURL(previewUrl);
+      });
+    };
+  }, [uploadedPreviewUrls]);
+  useEffect(() => {
     if (!asset || greetingFired.current) return;
     greetingFired.current = true;
 
@@ -719,10 +730,10 @@ export default function RegenerateStudio() {
     const files = Array.from(e.target.files ?? []).filter(
       (f) => f.size <= 50 * 1024 * 1024,
     );
-    setUploadedFiles([...uploadedFiles, ...files]);
+    setUploadedFiles((prev) => [...prev, ...files]);
   };
   const removeFile = (idx: number) =>
-    setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx));
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== idx));
   //
   const stageProgress =
     generationStage === "analyzing"
@@ -1244,7 +1255,7 @@ export default function RegenerateStudio() {
                   {uploadedFiles.length > 0 && (
                     <div className="space-y-2">
                       {uploadedFiles.map((file, idx) => {
-                        const src = URL.createObjectURL(file);
+                        const src = uploadedPreviewUrls[idx];
                         const isVid = file.type.startsWith("video/");
                         const isAud = file.type.startsWith("audio/");
                         return (

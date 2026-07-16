@@ -1,0 +1,629 @@
+{
+  "route": "/api/decision-layer-video/evaluate",
+  "mediaType": "video",
+  "status": "success",
+  "startedAt": "2026-07-16T07:29:19.391Z",
+  "endedAt": "2026-07-16T07:33:21.073Z",
+  "durationMs": 241682,
+  "responseStatus": 200,
+  "request": {
+    "userId": "c92fdce9-fd96-44b8-86fd-0c4e0a98e86b",
+    "customPrompt": null,
+    "userConcern": "general",
+    "creatorContext": {
+      "goal": "monetize",
+      "buyer": "product",
+      "mediaType": "video",
+      "timeConstraint": "under-1-hour",
+      "qualityLevel": "learning",
+      "blocker": "not-knowing-next"
+    },
+    "contextSummary": "Quality → Monetize → Product → Video → Under 1 Hour → Learning → Don't Know What's Next",
+    "clientSignals": [],
+    "files": [
+      {
+        "name": "1773693521258.mp4",
+        "type": "video/mp4",
+        "sizeBytes": 10708765,
+        "sizeMB": 10.21,
+        "lastModified": 1784186959398
+      }
+    ]
+  },
+  "result": {
+    "evaluation": {
+      "decision": "not-yet",
+      "title": "Almost There — Quick Improvements Needed",
+      "honestAssessment": "The video begins with a forward-moving camera gliding through a lush, high-resolution jungle environment characterized by massive trees, hanging vines, and dense undergrowth. Volumetric lighting creates distinct sunbeams piercing the misty canopy. A flock of small birds flies across the midground fr...",
+      "evidenceUsed": "Analyzed 20 frames from a 7.8-second video spanning timestamps 0.2s to 7.8s.",
+      "worthIt": {
+        "verdict": "maybe",
+        "explanation": "Overall readiness: 63%. Unable to determine specific blocker — review scores for guidance"
+      },
+      "readinessScores": [
+        {
+          "axis": "Creative Clarity",
+          "score": 60,
+          "label": "Solid",
+          "note": "Narrative jumps abruptly from one concept to another, needing smoother transitions."
+        },
+        {
+          "axis": "Technical Quality",
+          "score": 80,
+          "label": "Strong",
+          "note": "High resolution and good lighting, though minor artifacts exist."
+        },
+        {
+          "axis": "Consistency",
+          "score": 60,
+          "label": "Solid",
+          "note": "Style is mostly uniform but wavers in the final act."
+        },
+        {
+          "axis": "Audience Fit",
+          "score": 80,
+          "label": "Strong",
+          "note": "Appeals well to the target demographic with relevant themes."
+        },
+        {
+          "axis": "Differentiation",
+          "score": 40,
+          "label": "Developing",
+          "note": "Relies heavily on common tropes, needs more unique elements."
+        },
+        {
+          "axis": "Packaging Readiness",
+          "score": 60,
+          "label": "Solid",
+          "note": "Requires some metadata and formatting adjustments before release."
+        }
+      ],
+      "overallReadiness": 63,
+      "alignmentVerdict": "monetize-with-fixes",
+      "coachingRoadmap": [
+        {
+          "phase": 1,
+          "title": "Quick Wins",
+          "timeframe": "30 minutes",
+          "actions": [
+            "Re-run analysis for specific coaching steps"
+          ]
+        },
+        {
+          "phase": 2,
+          "title": "Level Up",
+          "timeframe": "2 hours",
+          "actions": [
+            "Re-run analysis for specific coaching steps"
+          ]
+        },
+        {
+          "phase": 3,
+          "title": "Market Ready",
+          "timeframe": "Ongoing",
+          "actions": [
+            "Re-run analysis for specific coaching steps"
+          ]
+        }
+      ],
+      "pricingGuidance": {
+        "tiers": [
+          {
+            "tier": "Starter",
+            "range": "$15-35",
+            "justification": "Current quality level for basic licensing"
+          },
+          {
+            "tier": "Standard",
+            "range": "$50-150",
+            "justification": "After technical improvements and better packaging"
+          },
+          {
+            "tier": "Premium",
+            "range": "$200-500+",
+            "justification": "Exclusive, series-ready content with consistent style"
+          }
+        ],
+        "currentTier": "Starter",
+        "currentRange": "$15-35",
+        "potentialRange": "$200-500+",
+        "rationale": "Current quality level for basic licensing",
+        "range": "$15-35",
+        "pricingTips": "",
+        "licenseOptions": [
+          {
+            "type": "Starter",
+            "price": "$15-35"
+          },
+          {
+            "type": "Standard",
+            "price": "$50-150"
+          },
+          {
+            "type": "Premium",
+            "price": "$200-500+"
+          }
+        ]
+      },
+      "topPainPoint": "Unable to determine specific blocker — review scores for guidance",
+      "videoMetadata": {
+        "duration": "0:08",
+        "resolution": "auto-detected",
+        "fileSize": "10.2MB",
+        "format": "video/mp4",
+        "framesAnalyzed": 40,
+        "hasAudio": true,
+        "audioQuality": "unknown"
+      },
+      "scores": {
+        "overall": 63,
+        "technical": 80,
+        "commercial": 80,
+        "narrative": 60,
+        "confidence": 63
+      },
+      "contentCritique": {
+        "strengths": [
+          "Technical Quality: High resolution and good lighting, though minor artifacts exist.",
+          "Audience Fit: Appeals well to the target demographic with relevant themes."
+        ],
+        "weaknesses": [
+          "Differentiation: Relies heavily on common tropes, needs more unique elements."
+        ],
+        "improvements": [
+          "Re-run analysis for specific coaching steps"
+        ]
+      },
+      "technicalBreakdown": {
+        "composition": "The video begins with a forward-moving camera gliding through a lush, high-resolution jungle environment characterized by massive trees, hanging vines, and dense undergrowth. Volumetric lighting creates distinct sunbeams piercing the misty canopy. A flock of small birds flies across the midground from left to right. The camera then accelerates and dives through darkened foliage, transitioning abruptly into a narrow, shadowed rock gorge where a pile of jagged debris is illuminated by a single shaft of light. The scene cuts suddenly to a post-apocalyptic, overgrown setting within the jungle. The camera slowly pans right across a tableau of ruin: a rusted sign bearing faux-Cyrillic text (\"ПРОДИЖАЙ\"), a broken metal barrel spilling a thick, dark crimson fluid, and the front half of a decayed white subway car marked with the number \"7\". Overgrown steel beams bridge the gap above. The rendering is highly detailed, with realistic textures on the rust, moss, and metal. In the final frames, a heavy, horizontal digital scanline glitch effect overlays the entire screen, simulating corrupted video footage.",
+        "technicalAssessment": "High resolution and good lighting, though minor artifacts exist.",
+        "visualDescription": "The video begins with a forward-moving camera gliding through a lush, high-resolution jungle environment characterized by massive trees, hanging vines, and dense undergrowth. Volumetric lighting creates distinct sunbeams piercing the misty canopy. A flock of small birds flies across the midground from left to right. The camera then accelerates and dives through darkened foliage, transitioning abruptly into a narrow, shadowed rock gorge where a pile of jagged debris is illuminated by a single shaft of light. The scene cuts suddenly to a post-apocalyptic, overgrown setting within the jungle. The camera slowly pans right across a tableau of ruin: a rusted sign bearing faux-Cyrillic text (\"ПРОДИЖАЙ\"), a broken metal barrel spilling a thick, dark crimson fluid, and the front half of a decayed white subway car marked with the number \"7\". Overgrown steel beams bridge the gap above. The rendering is highly detailed, with realistic textures on the rust, moss, and metal. In the final frames, a heavy, horizontal digital scanline glitch effect overlays the entire screen, simulating corrupted video footage."
+      },
+      "marketAnalysis": {
+        "commercialPotential": "Unable to determine specific blocker — review scores for guidance",
+        "targetAudience": "Indie creators, small businesses, social media managers",
+        "bestPlatforms": [
+          "KAIZORA",
+          "Envato",
+          "Motion Array"
+        ],
+        "demandLevel": "medium"
+      },
+      "whereToStart": {
+        "priority": "Re-run analysis for specific coaching steps",
+        "steps": [
+          "Re-run analysis for specific coaching steps"
+        ]
+      },
+      "nextSteps": [
+        "Re-run analysis for specific coaching steps",
+        "Implement quick wins",
+        "Re-run analysis for specific coaching steps",
+        "Re-analyze after improvements"
+      ],
+      "realTalk": "63% overall readiness across 40 frames. Unable to determine specific blocker — review scores for guidance",
+      "whatISaw": {
+        "subjects": "Massive jungle trees, hanging vines, ferns, flock of small birds, rocky canyon walls, debris pile (wood, rocks, scrap), rusted metal sign with Cyrillic-style text, rusted overhead steel beams, broken metal barrel, dark crimson fluid (resembling blood or oil), derelict subway train car (white with a blue stripe, numbered \"7\", mossy, graffitied), digital scanlines.",
+        "lighting": "Initial frames feature bright, warm, directional sunlight creating strong volumetric god rays through mist. The gorge sequence features dim, cool, ambient light with a central spotlight effect. The final ruined scene utilizes soft, diffused, overcast lighting filtering through the canopy, creating deep, moody shadows and highlighting the wet textures.",
+        "color": "Starts with vibrant, highly saturated lush greens and warm earthy browns. Transitions to dark, desaturated grays and deep greens in the gorge. The final scene employs a muted, oxidized palette consisting of rust orange, faded dirty white, chipped blue, and a stark, high-contrast dark red from the leaking barrel, set against deep jungle greens.",
+        "composition": "Begins with a wide, deep-focus tracking shot establishing the forest scale. Transitions to a tight, claustrophobic framing moving down the gorge. The final scene uses a structured, layered mid-shot, guiding the eye from the sign on the left, to the barrel in the center, to the train on the right, utilizing the rule of thirds. The camera incorporates a slow horizontal pan before the static glitch overlay appears.",
+        "mood": "The atmosphere progresses from peaceful, majestic, and cinematic to dark and mysterious, finally settling into a bleak, eerie, and desolate post-apocalyptic tension, amplified by the unsettling final visual corruption."
+      },
+      "whatYouToldMe": {
+        "goal": "monetize",
+        "pain": "not-knowing-next",
+        "constraints": "under-1-hour",
+        "buyerType": "product"
+      },
+      "realAlignment": {
+        "score": 63,
+        "gapSummary": "Unable to assess alignment gap.",
+        "blindSpots": []
+      },
+      "myRecommendation": {
+        "verdict": "Refine",
+        "reasoning": "Unable to determine specific blocker — review scores for guidance Overall readiness: 63%."
+      },
+      "exactEdits": [],
+      "honestPricing": {
+        "low": 15,
+        "high": 200,
+        "currency": "USD",
+        "reasoning": "Based on current video quality and market comparables.",
+        "comparable": "Similar stock clips on Pond5 and Shutterstock range $15-200."
+      },
+      "fastestPath": [],
+      "evidenceDetails": {
+        "fileCount": 1,
+        "resolution": "auto-detected",
+        "framesAnalyzed": 40,
+        "modelUsed": "gemini-3.1-pro-preview",
+        "analysisTimestamp": "2026-07-16T07:33:21.070Z",
+        "signalsSummary": "40 frames from 8.0s video"
+      },
+      "closingQuestion": "Which of the quick wins do you want to tackle first?",
+      "fallbackEvaluation": {
+        "vision_evidence": "The video begins with a forward-moving camera gliding through a lush, high-resolution jungle environment characterized by massive trees, hanging vines, and dense undergrowth. Volumetric lighting creates distinct sunbeams piercing the misty canopy. A flock of small birds flies across the midground from left to right. The camera then accelerates and dives through darkened foliage, transitioning abruptly into a narrow, shadowed rock gorge where a pile of jagged debris is illuminated by a single shaft of light. The scene cuts suddenly to a post-apocalyptic, overgrown setting within the jungle. The camera slowly pans right across a tableau of ruin: a rusted sign bearing faux-Cyrillic text (\"ПРОДИЖАЙ\"), a broken metal barrel spilling a thick, dark crimson fluid, and the front half of a decayed white subway car marked with the number \"7\". Overgrown steel beams bridge the gap above. The rendering is highly detailed, with realistic textures on the rust, moss, and metal. In the final frames, a heavy, horizontal digital scanline glitch effect overlays the entire screen, simulating corrupted video footage.",
+        "decision": "FLAG",
+        "confidence": 63,
+        "scores": {
+          "technical_quality": 80,
+          "market_fit": 80,
+          "policy_risk": 0,
+          "originality": 40
+        },
+        "reasons": [
+          "Creative Clarity: Narrative jumps abruptly from one concept to another, needing smoother transitions.",
+          "Technical Quality: High resolution and good lighting, though minor artifacts exist.",
+          "Consistency: Style is mostly uniform but wavers in the final act.",
+          "Audience Fit: Appeals well to the target demographic with relevant themes.",
+          "Packaging Readiness: Requires some metadata and formatting adjustments before release."
+        ],
+        "recommended_fixes": [],
+        "marketplace_recommendation": {
+          "should_list": true,
+          "category": "video",
+          "title": "monetize Video — 63% Market Ready",
+          "tags": [
+            "product",
+            "monetize",
+            "video"
+          ],
+          "price_range": "$15-35",
+          "next_step": "Re-run analysis for specific coaching steps"
+        }
+      },
+      "whatIHeard": {
+        "instruments": "Electronic → Experimental, Electronic → Ambient, Non-Music → Field Recording",
+        "rhythm": "Unknown tempo",
+        "tonality": "unknown",
+        "production": "Top genre confidence: 33%",
+        "mood": "Electronic → Experimental (33%), Electronic → Ambient (20%), Non-Music → Field Recording (17%), Electronic → Abstract (15%), Electronic → Musique Concrète (9%)"
+      },
+      "audioIntelligence": {
+        "genres": [
+          {
+            "genre": "Electronic → Experimental",
+            "confidence": 33
+          },
+          {
+            "genre": "Electronic → Ambient",
+            "confidence": 20
+          },
+          {
+            "genre": "Non-Music → Field Recording",
+            "confidence": 17
+          },
+          {
+            "genre": "Electronic → Abstract",
+            "confidence": 15
+          },
+          {
+            "genre": "Electronic → Musique Concrète",
+            "confidence": 9
+          },
+          {
+            "genre": "Electronic → Sound Collage",
+            "confidence": 7
+          },
+          {
+            "genre": "Electronic → Drone",
+            "confidence": 6
+          },
+          {
+            "genre": "Electronic → Glitch",
+            "confidence": 5
+          },
+          {
+            "genre": "Electronic → Noise",
+            "confidence": 4
+          },
+          {
+            "genre": "Pop → K-pop",
+            "confidence": 4
+          }
+        ],
+        "moods": [],
+        "instruments": [],
+        "isVocal": false,
+        "vocalGender": "unknown",
+        "danceability": 0,
+        "engagement": 0,
+        "approachability": 0,
+        "bpm": 0,
+        "key": "unknown",
+        "structure": [
+          {
+            "section": "start",
+            "startTime": 0,
+            "endTime": 0.51
+          },
+          {
+            "section": "start",
+            "startTime": 0.51,
+            "endTime": 7.92
+          }
+        ],
+        "hasSpeech": true,
+        "transcript": "(no speech — music/ambient audio present)"
+      }
+    },
+    "videoAnalysis": {
+      "visualDescription": "The video begins with a forward-moving camera gliding through a lush, high-resolution jungle environment characterized by massive trees, hanging vines, and dense undergrowth. Volumetric lighting creates distinct sunbeams piercing the misty canopy. A flock of small birds flies across the midground from left to right. The camera then accelerates and dives through darkened foliage, transitioning abruptly into a narrow, shadowed rock gorge where a pile of jagged debris is illuminated by a single shaft of light. The scene cuts suddenly to a post-apocalyptic, overgrown setting within the jungle. The camera slowly pans right across a tableau of ruin: a rusted sign bearing faux-Cyrillic text (\"ПРОДИЖАЙ\"), a broken metal barrel spilling a thick, dark crimson fluid, and the front half of a decayed white subway car marked with the number \"7\". Overgrown steel beams bridge the gap above. The rendering is highly detailed, with realistic textures on the rust, moss, and metal. In the final frames, a heavy, horizontal digital scanline glitch effect overlays the entire screen, simulating corrupted video footage.",
+      "evidenceUsed": "Analyzed 20 frames from a 7.8-second video spanning timestamps 0.2s to 7.8s.",
+      "audioAnalysis": {
+        "hasAudio": true,
+        "transcript": "(no speech — music/ambient audio present)",
+        "audioQuality": "unknown",
+        "audioNotes": "Audio detected."
+      },
+      "readinessScores": [
+        {
+          "axis": "Creative Clarity",
+          "score": 60,
+          "label": "Solid",
+          "note": "Narrative jumps abruptly from one concept to another, needing smoother transitions."
+        },
+        {
+          "axis": "Technical Quality",
+          "score": 80,
+          "label": "Strong",
+          "note": "High resolution and good lighting, though minor artifacts exist."
+        },
+        {
+          "axis": "Consistency",
+          "score": 60,
+          "label": "Solid",
+          "note": "Style is mostly uniform but wavers in the final act."
+        },
+        {
+          "axis": "Audience Fit",
+          "score": 80,
+          "label": "Strong",
+          "note": "Appeals well to the target demographic with relevant themes."
+        },
+        {
+          "axis": "Differentiation",
+          "score": 40,
+          "label": "Developing",
+          "note": "Relies heavily on common tropes, needs more unique elements."
+        },
+        {
+          "axis": "Packaging Readiness",
+          "score": 60,
+          "label": "Solid",
+          "note": "Requires some metadata and formatting adjustments before release."
+        }
+      ],
+      "overallReadiness": 63,
+      "alignmentVerdict": "monetize-with-fixes",
+      "coachingRoadmap": [
+        {
+          "phase": 1,
+          "title": "Quick Wins",
+          "timeframe": "30 minutes",
+          "actions": [
+            "Re-run analysis for specific coaching steps"
+          ]
+        },
+        {
+          "phase": 2,
+          "title": "Level Up",
+          "timeframe": "2 hours",
+          "actions": [
+            "Re-run analysis for specific coaching steps"
+          ]
+        },
+        {
+          "phase": 3,
+          "title": "Market Ready",
+          "timeframe": "Ongoing",
+          "actions": [
+            "Re-run analysis for specific coaching steps"
+          ]
+        }
+      ],
+      "pricingTiers": [
+        {
+          "tier": "Starter",
+          "range": "$15-35",
+          "justification": "Current quality level for basic licensing"
+        },
+        {
+          "tier": "Standard",
+          "range": "$50-150",
+          "justification": "After technical improvements and better packaging"
+        },
+        {
+          "tier": "Premium",
+          "range": "$200-500+",
+          "justification": "Exclusive, series-ready content with consistent style"
+        }
+      ],
+      "topPainPoint": "Unable to determine specific blocker — review scores for guidance",
+      "frameCount": 40,
+      "sampledTimestamps": [
+        0.195,
+        0.39,
+        0.585,
+        0.78,
+        0.975,
+        1.17,
+        1.365,
+        1.56,
+        1.756,
+        1.951,
+        2.146,
+        2.341,
+        2.536,
+        2.731,
+        2.926,
+        3.121,
+        3.317,
+        3.512,
+        3.707,
+        3.902,
+        4.097,
+        4.292,
+        4.487,
+        4.682,
+        4.878,
+        5.073,
+        5.268,
+        5.463,
+        5.658,
+        5.853,
+        6.048,
+        6.243,
+        6.439,
+        6.634,
+        6.829,
+        7.024,
+        7.219,
+        7.414,
+        7.609,
+        7.804
+      ],
+      "durationSeconds": 8,
+      "model": "gemini-3.1-pro-preview",
+      "whatISaw": {
+        "subjects": "Massive jungle trees, hanging vines, ferns, flock of small birds, rocky canyon walls, debris pile (wood, rocks, scrap), rusted metal sign with Cyrillic-style text, rusted overhead steel beams, broken metal barrel, dark crimson fluid (resembling blood or oil), derelict subway train car (white with a blue stripe, numbered \"7\", mossy, graffitied), digital scanlines.",
+        "lighting": "Initial frames feature bright, warm, directional sunlight creating strong volumetric god rays through mist. The gorge sequence features dim, cool, ambient light with a central spotlight effect. The final ruined scene utilizes soft, diffused, overcast lighting filtering through the canopy, creating deep, moody shadows and highlighting the wet textures.",
+        "color": "Starts with vibrant, highly saturated lush greens and warm earthy browns. Transitions to dark, desaturated grays and deep greens in the gorge. The final scene employs a muted, oxidized palette consisting of rust orange, faded dirty white, chipped blue, and a stark, high-contrast dark red from the leaking barrel, set against deep jungle greens.",
+        "composition": "Begins with a wide, deep-focus tracking shot establishing the forest scale. Transitions to a tight, claustrophobic framing moving down the gorge. The final scene uses a structured, layered mid-shot, guiding the eye from the sign on the left, to the barrel in the center, to the train on the right, utilizing the rule of thirds. The camera incorporates a slow horizontal pan before the static glitch overlay appears.",
+        "mood": "The atmosphere progresses from peaceful, majestic, and cinematic to dark and mysterious, finally settling into a bleak, eerie, and desolate post-apocalyptic tension, amplified by the unsettling final visual corruption."
+      },
+      "whatYouToldMe": {
+        "goal": "monetize",
+        "pain": "not-knowing-next",
+        "constraints": "under-1-hour",
+        "buyerType": "product"
+      },
+      "realAlignment": {
+        "score": 63,
+        "gapSummary": "Unable to assess alignment gap.",
+        "blindSpots": []
+      },
+      "myRecommendation": {
+        "verdict": "Refine",
+        "reasoning": "Unable to determine specific blocker — review scores for guidance Overall readiness: 63%."
+      },
+      "exactEdits": [],
+      "honestPricing": {
+        "low": 15,
+        "high": 200,
+        "currency": "USD",
+        "reasoning": "Based on current video quality and market comparables.",
+        "comparable": "Similar stock clips on Pond5 and Shutterstock range $15-200."
+      },
+      "fastestPath": [],
+      "evidenceDetails": {
+        "fileCount": 1,
+        "resolution": "auto-detected",
+        "framesAnalyzed": 40,
+        "modelUsed": "gemini-3.1-pro-preview",
+        "analysisTimestamp": "2026-07-16T07:33:21.070Z",
+        "signalsSummary": "40 frames from 8.0s video"
+      },
+      "audioIntelligence": {
+        "genres": [
+          {
+            "genre": "Electronic → Experimental",
+            "confidence": 33
+          },
+          {
+            "genre": "Electronic → Ambient",
+            "confidence": 20
+          },
+          {
+            "genre": "Non-Music → Field Recording",
+            "confidence": 17
+          },
+          {
+            "genre": "Electronic → Abstract",
+            "confidence": 15
+          },
+          {
+            "genre": "Electronic → Musique Concrète",
+            "confidence": 9
+          },
+          {
+            "genre": "Electronic → Sound Collage",
+            "confidence": 7
+          },
+          {
+            "genre": "Electronic → Drone",
+            "confidence": 6
+          },
+          {
+            "genre": "Electronic → Glitch",
+            "confidence": 5
+          },
+          {
+            "genre": "Electronic → Noise",
+            "confidence": 4
+          },
+          {
+            "genre": "Pop → K-pop",
+            "confidence": 4
+          }
+        ],
+        "moods": [],
+        "instruments": [],
+        "isVocal": false,
+        "vocalGender": "unknown",
+        "danceability": 0,
+        "engagement": 0,
+        "approachability": 0,
+        "bpm": 0,
+        "key": "unknown",
+        "structure": [
+          {
+            "section": "start",
+            "startTime": 0,
+            "endTime": 0.51
+          },
+          {
+            "section": "start",
+            "startTime": 0.51,
+            "endTime": 7.92
+          }
+        ]
+      },
+      "closingQuestion": "Which of the quick wins do you want to tackle first?",
+      "fallbackEvaluation": {
+        "vision_evidence": "The video begins with a forward-moving camera gliding through a lush, high-resolution jungle environment characterized by massive trees, hanging vines, and dense undergrowth. Volumetric lighting creates distinct sunbeams piercing the misty canopy. A flock of small birds flies across the midground from left to right. The camera then accelerates and dives through darkened foliage, transitioning abruptly into a narrow, shadowed rock gorge where a pile of jagged debris is illuminated by a single shaft of light. The scene cuts suddenly to a post-apocalyptic, overgrown setting within the jungle. The camera slowly pans right across a tableau of ruin: a rusted sign bearing faux-Cyrillic text (\"ПРОДИЖАЙ\"), a broken metal barrel spilling a thick, dark crimson fluid, and the front half of a decayed white subway car marked with the number \"7\". Overgrown steel beams bridge the gap above. The rendering is highly detailed, with realistic textures on the rust, moss, and metal. In the final frames, a heavy, horizontal digital scanline glitch effect overlays the entire screen, simulating corrupted video footage.",
+        "decision": "FLAG",
+        "confidence": 63,
+        "scores": {
+          "technical_quality": 80,
+          "market_fit": 80,
+          "policy_risk": 0,
+          "originality": 40
+        },
+        "reasons": [
+          "Creative Clarity: Narrative jumps abruptly from one concept to another, needing smoother transitions.",
+          "Technical Quality: High resolution and good lighting, though minor artifacts exist.",
+          "Consistency: Style is mostly uniform but wavers in the final act.",
+          "Audience Fit: Appeals well to the target demographic with relevant themes.",
+          "Packaging Readiness: Requires some metadata and formatting adjustments before release."
+        ],
+        "recommended_fixes": [],
+        "marketplace_recommendation": {
+          "should_list": true,
+          "category": "video",
+          "title": "monetize Video — 63% Market Ready",
+          "tags": [
+            "product",
+            "monetize",
+            "video"
+          ],
+          "price_range": "$15-35",
+          "next_step": "Re-run analysis for specific coaching steps"
+        }
+      }
+    },
+    "creditCost": 16
+  },
+  "error": null
+}
