@@ -2749,10 +2749,11 @@ export default function MarketplacePage() {
                     const imgUrl = storageUrl(asset?.thumbnail_path || asset?.storage_path);
                     const videoUrl = storageUrl(asset?.storage_path);
                     const contentType = asset?.content_type ?? "asset";
-                    const useVideoPreview =
-                      contentType === "video" &&
-                      (!asset?.thumbnail_path ||
-                        isVideoPreviewPath(asset.thumbnail_path));
+                    const useVideoPreview = contentType === "video" && !!videoUrl;
+                    const videoPosterUrl =
+                      asset?.thumbnail_path && !isVideoPreviewPath(asset.thumbnail_path)
+                        ? storageUrl(asset.thumbnail_path)
+                        : undefined;
                     const displayType = contentType.charAt(0).toUpperCase() + contentType.slice(1);
                     const licenseBadge = getLicenseBadge(listing.license_type);
                     const priceDisplay = isPaid ? `$${(listing.price_cents / 100).toFixed(2)}` : "Free";
@@ -2773,19 +2774,31 @@ export default function MarketplacePage() {
                     return (
                       <article
                         key={listing.id}
-                        onClick={() => router.push(`/assets/${listing.id}`)}
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement | null;
+                          if (target?.closest("[data-card-media-interactive='true']")) {
+                            return;
+                          }
+                          router.push(`/assets/${listing.id}`);
+                        }}
                         className="group relative rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/[0.06] hover:border-white/[0.13] hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-black/60 transition-all duration-300 cursor-pointer flex flex-col"
                       >
                         {/* Image */}
                         <div className="relative aspect-[4/3] bg-[#0b0b0b] overflow-hidden flex-shrink-0">
                           {useVideoPreview && videoUrl ? (
-                            <div className="relative w-full h-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.18))] p-2">
+                            <div
+                              data-card-media-interactive="true"
+                              className="relative w-full h-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.18))] p-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <video
                                 src={videoUrl}
+                                poster={videoPosterUrl}
                                 className="w-full h-full object-cover rounded-xl group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                                muted
+                                controls
                                 playsInline
                                 preload="metadata"
+                                onClick={(e) => e.stopPropagation()}
                               />
                             </div>
                           ) : imgUrl ? (
@@ -2804,7 +2817,7 @@ export default function MarketplacePage() {
                               <span className="text-[10px] text-gray-700">No preview</span>
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
                           <button
                             onClick={(e) => toggleLike(listing.id, e)}
                             className={`absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md border transition-all duration-200 ${isLiked ? "bg-red-500/25 border-red-400/40 shadow-lg shadow-red-500/20" : "bg-black/45 border-white/[0.14] hover:bg-black/65 hover:border-white/25"}`}
