@@ -14,6 +14,7 @@ import {
   summarizeFiles,
   writeDecisionLayerAnalysisLog,
 } from "@/lib/decisionLayerAnalysisLogs";
+import { shouldExposeDebugUi } from "@/lib/debugLogs";
 
 const maskSecret = (value?: string | null) => {
   if (!value) return "Not configured";
@@ -22,6 +23,7 @@ const maskSecret = (value?: string | null) => {
 };
 
 export async function POST(request: NextRequest) {
+  const exposeDebugUi = shouldExposeDebugUi("KAIZORA_LOG_GEMINI", false);
   const startedAt = new Date().toISOString();
   let requestSummary: Record<string, unknown> = {};
 
@@ -344,32 +346,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       evaluation,
-      debug: {
-        image_analysis: imageAnalysis,
-        model_used:
-          imageAnalysis.evidenceDetails?.modelUsed ||
-          "gemini-3.1-pro-preview",
-        api: {
-          provider: "Google Gemini",
-          models: imageAnalysis.evidenceDetails?.modelUsed
-            ? imageAnalysis.evidenceDetails.modelUsed.split(" -> ")
-            : ["gemini-3.1-pro-preview"],
-          statusLog: imageAnalysis.evidenceDetails?.statusLog || [],
-          keys: [
-            {
-              label: "GEMINI_API_KEY",
-              masked: maskSecret(process.env.GEMINI_API_KEY),
+      ...(exposeDebugUi
+        ? {
+            debug: {
+              image_analysis: imageAnalysis,
+              model_used:
+                imageAnalysis.evidenceDetails?.modelUsed ||
+                "gemini-3.1-pro-preview",
+              api: {
+                provider: "Google Gemini",
+                models: imageAnalysis.evidenceDetails?.modelUsed
+                  ? imageAnalysis.evidenceDetails.modelUsed.split(" -> ")
+                  : ["gemini-3.1-pro-preview"],
+                statusLog: imageAnalysis.evidenceDetails?.statusLog || [],
+                keys: [
+                  {
+                    label: "GEMINI_API_KEY",
+                    masked: maskSecret(process.env.GEMINI_API_KEY),
+                  },
+                ],
+              },
+              pipeline:
+                analysisMode === "fast"
+                  ? "2-call fast (description → synthesis)"
+                  : "3-call (description → scoring → coaching)",
+              analysis_mode: analysisMode,
+              creator_context: creatorContext,
+              analysis_log_file: analysisLogFile,
             },
-          ],
-        },
-        pipeline:
-          analysisMode === "fast"
-            ? "2-call fast (description → synthesis)"
-            : "3-call (description → scoring → coaching)",
-        analysis_mode: analysisMode,
-        creator_context: creatorContext,
-        analysis_log_file: analysisLogFile,
-      },
+          }
+        : {}),
     });
   } catch (error: any) {
     console.error("❌ Decision layer API error:", error);
@@ -390,19 +396,23 @@ export async function POST(request: NextRequest) {
             error.details ||
             "The model response did not contain reliable visual evidence.",
           verification: error.verification || null,
-          debug: {
-            api: {
-              provider: "Google Gemini",
-              models: ["gemini-3.1-pro-preview"],
-              keys: [
-                {
-                  label: "GEMINI_API_KEY",
-                  masked: maskSecret(process.env.GEMINI_API_KEY),
+          ...(exposeDebugUi
+            ? {
+                debug: {
+                  api: {
+                    provider: "Google Gemini",
+                    models: ["gemini-3.1-pro-preview"],
+                    keys: [
+                      {
+                        label: "GEMINI_API_KEY",
+                        masked: maskSecret(process.env.GEMINI_API_KEY),
+                      },
+                    ],
+                    analysis_log_file: analysisLogFile,
+                  },
                 },
-              ],
-              analysis_log_file: analysisLogFile,
-            },
-          },
+              }
+            : {}),
         },
         { status: 422 },
       );
@@ -420,19 +430,23 @@ export async function POST(request: NextRequest) {
       {
         error: "Failed to evaluate content",
         details: error.message,
-        debug: {
-          api: {
-            provider: "Google Gemini",
-            models: ["gemini-3.1-pro-preview"],
-            keys: [
-              {
-                label: "GEMINI_API_KEY",
-                masked: maskSecret(process.env.GEMINI_API_KEY),
+        ...(exposeDebugUi
+          ? {
+              debug: {
+                api: {
+                  provider: "Google Gemini",
+                  models: ["gemini-3.1-pro-preview"],
+                  keys: [
+                    {
+                      label: "GEMINI_API_KEY",
+                      masked: maskSecret(process.env.GEMINI_API_KEY),
+                    },
+                  ],
+                  analysis_log_file: analysisLogFile,
+                },
               },
-            ],
-            analysis_log_file: analysisLogFile,
-          },
-        },
+            }
+          : {}),
       },
       { status: 500 },
     );

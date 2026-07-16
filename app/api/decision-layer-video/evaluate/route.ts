@@ -18,11 +18,13 @@ import {
   summarizeFiles,
   writeDecisionLayerAnalysisLog,
 } from "@/lib/decisionLayerAnalysisLogs";
+import { shouldExposeDebugUi } from "@/lib/debugLogs";
 import { maskSecret } from "@/lib/replicateDebug";
 
 const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
 
 export async function POST(request: NextRequest) {
+  const exposeDebugUi = shouldExposeDebugUi("KAIZORA_LOG_GEMINI", false);
   const startedAt = new Date().toISOString();
   let requestSummary: Record<string, unknown> = {};
 
@@ -364,28 +366,32 @@ demandLevel:
     return NextResponse.json({
       success: true,
       evaluation,
-      debug: {
-        video_analysis: videoAnalysis,
-        models_used: ["gemini-3.1-pro-preview"],
-        api: {
-          provider: "Google Gemini + Replicate",
-          models: ["gemini-3.1-pro-preview"],
-          keys: [
-            {
-              label: "GEMINI_API_KEY",
-              masked: maskSecret(process.env.GEMINI_API_KEY),
+      ...(exposeDebugUi
+        ? {
+            debug: {
+              video_analysis: videoAnalysis,
+              models_used: ["gemini-3.1-pro-preview"],
+              api: {
+                provider: "Google Gemini + Replicate",
+                models: ["gemini-3.1-pro-preview"],
+                keys: [
+                  {
+                    label: "GEMINI_API_KEY",
+                    masked: maskSecret(process.env.GEMINI_API_KEY),
+                  },
+                  {
+                    label: "REPLICATE_API_TOKEN",
+                    masked: maskSecret(process.env.REPLICATE_API_TOKEN),
+                  },
+                ],
+              },
+              pipeline: "3-call (description → scoring → coaching)",
+              frames_analyzed: videoAnalysis.frameCount,
+              creator_context: creatorContext,
+              analysis_log_file: analysisLogFile,
             },
-            {
-              label: "REPLICATE_API_TOKEN",
-              masked: maskSecret(process.env.REPLICATE_API_TOKEN),
-            },
-          ],
-        },
-        pipeline: "3-call (description → scoring → coaching)",
-        frames_analyzed: videoAnalysis.frameCount,
-        creator_context: creatorContext,
-        analysis_log_file: analysisLogFile,
-      },
+          }
+        : {}),
     });
   } catch (error: any) {
     console.error("❌ Video decision layer API error:", error);
@@ -427,23 +433,27 @@ demandLevel:
             error.details ||
             "The model response did not contain reliable frame evidence.",
           verification: error.verification || null,
-          debug: {
-            api: {
-              provider: "Google Gemini + Replicate",
-              models: ["gemini-3.1-pro-preview"],
-              keys: [
-                {
-                  label: "GEMINI_API_KEY",
-                  masked: maskSecret(process.env.GEMINI_API_KEY),
+          ...(exposeDebugUi
+            ? {
+                debug: {
+                  api: {
+                    provider: "Google Gemini + Replicate",
+                    models: ["gemini-3.1-pro-preview"],
+                    keys: [
+                      {
+                        label: "GEMINI_API_KEY",
+                        masked: maskSecret(process.env.GEMINI_API_KEY),
+                      },
+                      {
+                        label: "REPLICATE_API_TOKEN",
+                        masked: maskSecret(process.env.REPLICATE_API_TOKEN),
+                      },
+                    ],
+                  },
+                  analysis_log_file: analysisLogFile,
                 },
-                {
-                  label: "REPLICATE_API_TOKEN",
-                  masked: maskSecret(process.env.REPLICATE_API_TOKEN),
-                },
-              ],
-            },
-            analysis_log_file: analysisLogFile,
-          },
+              }
+            : {}),
         },
         { status: 422 },
       );
@@ -468,24 +478,28 @@ demandLevel:
             error.details ||
             "The model returned an invalid scoring payload for the 6-axis evaluation step.",
           stage: error.stage || "scoreVideoAxes",
-          debug: {
-            raw_model_snippet: error.rawText || null,
-            api: {
-              provider: "Google Gemini + Replicate",
-              models: ["gemini-3.1-pro-preview"],
-              keys: [
-                {
-                  label: "GEMINI_API_KEY",
-                  masked: maskSecret(process.env.GEMINI_API_KEY),
+          ...(exposeDebugUi
+            ? {
+                debug: {
+                  raw_model_snippet: error.rawText || null,
+                  api: {
+                    provider: "Google Gemini + Replicate",
+                    models: ["gemini-3.1-pro-preview"],
+                    keys: [
+                      {
+                        label: "GEMINI_API_KEY",
+                        masked: maskSecret(process.env.GEMINI_API_KEY),
+                      },
+                      {
+                        label: "REPLICATE_API_TOKEN",
+                        masked: maskSecret(process.env.REPLICATE_API_TOKEN),
+                      },
+                    ],
+                    analysis_log_file: analysisLogFile,
+                  },
                 },
-                {
-                  label: "REPLICATE_API_TOKEN",
-                  masked: maskSecret(process.env.REPLICATE_API_TOKEN),
-                },
-              ],
-              analysis_log_file: analysisLogFile,
-            },
-          },
+              }
+            : {}),
         },
         { status: 502 },
       );
@@ -512,23 +526,27 @@ demandLevel:
             nextStep:
               "Install ffmpeg and ffprobe, or set FFMPEG_PATH and FFPROBE_PATH to valid executable paths.",
           },
-          debug: {
-            api: {
-              provider: "Google Gemini + Replicate",
-              models: ["gemini-3.1-pro-preview"],
-              keys: [
-                {
-                  label: "GEMINI_API_KEY",
-                  masked: maskSecret(process.env.GEMINI_API_KEY),
+          ...(exposeDebugUi
+            ? {
+                debug: {
+                  api: {
+                    provider: "Google Gemini + Replicate",
+                    models: ["gemini-3.1-pro-preview"],
+                    keys: [
+                      {
+                        label: "GEMINI_API_KEY",
+                        masked: maskSecret(process.env.GEMINI_API_KEY),
+                      },
+                      {
+                        label: "REPLICATE_API_TOKEN",
+                        masked: maskSecret(process.env.REPLICATE_API_TOKEN),
+                      },
+                    ],
+                  },
+                  analysis_log_file: analysisLogFile,
                 },
-                {
-                  label: "REPLICATE_API_TOKEN",
-                  masked: maskSecret(process.env.REPLICATE_API_TOKEN),
-                },
-              ],
-            },
-            analysis_log_file: analysisLogFile,
-          },
+              }
+            : {}),
         },
         { status: 503 },
       );
@@ -546,23 +564,27 @@ demandLevel:
       {
         error: "Failed to evaluate video content",
         details: error.message,
-        debug: {
-          api: {
-            provider: "Google Gemini + Replicate",
-            models: ["gemini-3.1-pro-preview"],
-            keys: [
-              {
-                label: "GEMINI_API_KEY",
-                masked: maskSecret(process.env.GEMINI_API_KEY),
+        ...(exposeDebugUi
+          ? {
+              debug: {
+                api: {
+                  provider: "Google Gemini + Replicate",
+                  models: ["gemini-3.1-pro-preview"],
+                  keys: [
+                    {
+                      label: "GEMINI_API_KEY",
+                      masked: maskSecret(process.env.GEMINI_API_KEY),
+                    },
+                    {
+                      label: "REPLICATE_API_TOKEN",
+                      masked: maskSecret(process.env.REPLICATE_API_TOKEN),
+                    },
+                  ],
+                  analysis_log_file: analysisLogFile,
+                },
               },
-              {
-                label: "REPLICATE_API_TOKEN",
-                masked: maskSecret(process.env.REPLICATE_API_TOKEN),
-              },
-            ],
-            analysis_log_file: analysisLogFile,
-          },
-        },
+            }
+          : {}),
       },
       { status: 500 },
     );

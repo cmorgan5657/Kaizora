@@ -4333,28 +4333,26 @@ function DecisionLayerFlowContent() {
                                   : evaluation.evidenceUsed}
                               </p>
                             )}
-                            {(analysisApiInfo || analysisElapsedMs > 0) && (
+                            {analysisApiInfo && (
                               <div className="mt-3 flex flex-wrap gap-2">
-                                {analysisApiInfo && (
-                                  <>
-                                    <span className="text-[10px] uppercase tracking-wider text-zinc-400 border border-zinc-700 px-2 py-1">
-                                      API {analysisApiInfo.provider}
+                                <>
+                                  <span className="text-[10px] uppercase tracking-wider text-zinc-400 border border-zinc-700 px-2 py-1">
+                                    API {analysisApiInfo.provider}
+                                  </span>
+                                  {analysisApiInfo.models.length > 0 && (
+                                    <span className="text-[10px] text-zinc-500 border border-zinc-800 px-2 py-1">
+                                      {analysisApiInfo.models.join(" + ")}
                                     </span>
-                                    {analysisApiInfo.models.length > 0 && (
-                                      <span className="text-[10px] text-zinc-500 border border-zinc-800 px-2 py-1">
-                                        {analysisApiInfo.models.join(" + ")}
-                                      </span>
-                                    )}
-                                    {analysisApiInfo.keys.map((key) => (
-                                      <span
-                                        key={key.label}
-                                        className="text-[10px] text-zinc-500 border border-zinc-800 px-2 py-1"
-                                      >
-                                        {key.label}: {key.masked}
-                                      </span>
-                                    ))}
-                                  </>
-                                )}
+                                  )}
+                                  {analysisApiInfo.keys.map((key) => (
+                                    <span
+                                      key={key.label}
+                                      className="text-[10px] text-zinc-500 border border-zinc-800 px-2 py-1"
+                                    >
+                                      {key.label}: {key.masked}
+                                    </span>
+                                  ))}
+                                </>
                                 {analysisElapsedMs > 0 && (
                                   <span className="text-[10px] text-zinc-400 border border-zinc-700 px-2 py-1">
                                     Eval time{" "}
@@ -5633,28 +5631,26 @@ function DecisionLayerFlowContent() {
                   <p className="text-red-300 text-xs leading-relaxed">
                     {error}
                   </p>
-                  {(analysisApiInfo || analysisElapsedMs > 0) && (
+                  {analysisApiInfo && (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {analysisApiInfo && (
-                        <>
-                          <span className="text-[10px] uppercase tracking-wider text-red-200 border border-red-500/30 px-2 py-1">
-                            API {analysisApiInfo.provider}
+                      <>
+                        <span className="text-[10px] uppercase tracking-wider text-red-200 border border-red-500/30 px-2 py-1">
+                          API {analysisApiInfo.provider}
+                        </span>
+                        {analysisApiInfo.models.length > 0 && (
+                          <span className="text-[10px] text-red-100/80 border border-red-500/20 px-2 py-1">
+                            {analysisApiInfo.models.join(" + ")}
                           </span>
-                          {analysisApiInfo.models.length > 0 && (
-                            <span className="text-[10px] text-red-100/80 border border-red-500/20 px-2 py-1">
-                              {analysisApiInfo.models.join(" + ")}
-                            </span>
-                          )}
-                          {analysisApiInfo.keys.map((key) => (
-                            <span
-                              key={key.label}
-                              className="text-[10px] text-red-100/80 border border-red-500/20 px-2 py-1"
-                            >
-                              {key.label}: {key.masked}
-                            </span>
-                          ))}
-                        </>
-                      )}
+                        )}
+                        {analysisApiInfo.keys.map((key) => (
+                          <span
+                            key={key.label}
+                            className="text-[10px] text-red-100/80 border border-red-500/20 px-2 py-1"
+                          >
+                            {key.label}: {key.masked}
+                          </span>
+                        ))}
+                      </>
                       {analysisElapsedMs > 0 && (
                         <span className="text-[10px] text-red-100/80 border border-red-500/20 px-2 py-1">
                           Eval time {formatAnalysisDuration(analysisElapsedMs)}

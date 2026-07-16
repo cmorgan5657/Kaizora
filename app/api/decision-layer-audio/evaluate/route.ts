@@ -13,6 +13,7 @@ import {
   summarizeFiles,
   writeDecisionLayerAnalysisLog,
 } from "@/lib/decisionLayerAnalysisLogs";
+import { shouldExposeDebugUi } from "@/lib/debugLogs";
 import { maskSecret } from "@/lib/replicateDebug";
 
 const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
@@ -20,6 +21,7 @@ const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
 export const maxDuration = 300; // 5 minutes max for audio processing
 
 export async function POST(req: NextRequest) {
+  const exposeDebugUi = shouldExposeDebugUi("KAIZORA_LOG_GEMINI", false);
   const startedAt = new Date().toISOString();
   let requestSummary: Record<string, unknown> = {};
 
@@ -313,23 +315,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       evaluation,
-      debug: {
-        api: {
-          provider: "Google Gemini + Replicate",
-          models: ["gemini-3.1-pro-preview"],
-          keys: [
-            {
-              label: "GEMINI_API_KEY",
-              masked: maskSecret(process.env.GEMINI_API_KEY),
+      ...(exposeDebugUi
+        ? {
+            debug: {
+              api: {
+                provider: "Google Gemini + Replicate",
+                models: ["gemini-3.1-pro-preview"],
+                keys: [
+                  {
+                    label: "GEMINI_API_KEY",
+                    masked: maskSecret(process.env.GEMINI_API_KEY),
+                  },
+                  {
+                    label: "REPLICATE_API_TOKEN",
+                    masked: maskSecret(process.env.REPLICATE_API_TOKEN),
+                  },
+                ],
+              },
+              analysis_log_file: analysisLogFile,
             },
-            {
-              label: "REPLICATE_API_TOKEN",
-              masked: maskSecret(process.env.REPLICATE_API_TOKEN),
-            },
-          ],
-        },
-        analysis_log_file: analysisLogFile,
-      },
+          }
+        : {}),
     });
   } catch (error: any) {
     console.error("Audio evaluation error:", error);
@@ -346,23 +352,27 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: error.message || "Failed to evaluate audio",
-        debug: {
-          api: {
-            provider: "Google Gemini + Replicate",
-            models: ["gemini-3.1-pro-preview"],
-            keys: [
-              {
-                label: "GEMINI_API_KEY",
-                masked: maskSecret(process.env.GEMINI_API_KEY),
+        ...(exposeDebugUi
+          ? {
+              debug: {
+                api: {
+                  provider: "Google Gemini + Replicate",
+                  models: ["gemini-3.1-pro-preview"],
+                  keys: [
+                    {
+                      label: "GEMINI_API_KEY",
+                      masked: maskSecret(process.env.GEMINI_API_KEY),
+                    },
+                    {
+                      label: "REPLICATE_API_TOKEN",
+                      masked: maskSecret(process.env.REPLICATE_API_TOKEN),
+                    },
+                  ],
+                  analysis_log_file: analysisLogFile,
+                },
               },
-              {
-                label: "REPLICATE_API_TOKEN",
-                masked: maskSecret(process.env.REPLICATE_API_TOKEN),
-              },
-            ],
-            analysis_log_file: analysisLogFile,
-          },
-        },
+            }
+          : {}),
       },
       { status: 500 },
     );

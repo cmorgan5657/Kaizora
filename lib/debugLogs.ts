@@ -26,6 +26,13 @@ export function isServerLogEnabled(
   return parseEnvFlag(process.env[areaEnvKey], defaultValue);
 }
 
+export function shouldExposeDebugUi(
+  areaEnvKey: string,
+  defaultValue = true,
+): boolean {
+  return isServerLogEnabled(areaEnvKey, defaultValue);
+}
+
 export function serverLog(
   areaEnvKey: string,
   level: LogLevel,

@@ -1,0 +1,526 @@
+{
+  "route": "/api/decision-layer/evaluate",
+  "mediaType": "image",
+  "status": "success",
+  "startedAt": "2026-07-16T14:37:48.694Z",
+  "endedAt": "2026-07-16T14:38:26.656Z",
+  "durationMs": 37962,
+  "responseStatus": 200,
+  "request": {
+    "userId": "c92fdce9-fd96-44b8-86fd-0c4e0a98e86b",
+    "customPrompt": null,
+    "analysisMode": "fast",
+    "userConcern": "general",
+    "creatorContext": {
+      "goal": "monetize",
+      "buyer": "product",
+      "mediaType": "images",
+      "timeConstraint": "no-deadline",
+      "qualityLevel": "cinema",
+      "blocker": "packaging-time"
+    },
+    "contextSummary": "Quality → Monetize → Product → Images → No Deadline → Cinema → Packaging Takes Forever",
+    "clientSignals": [],
+    "files": [
+      {
+        "name": "1782510538601-4c30b2cf-1684-4b97-b586-077abc7557ab.png",
+        "type": "image/png",
+        "sizeBytes": 2253465,
+        "sizeMB": 2.15,
+        "lastModified": 1784212668697
+      }
+    ]
+  },
+  "result": {
+    "evaluation": {
+      "decision": "not-yet",
+      "title": "Portfolio Ready — Not Yet Market Ready",
+      "honestAssessment": "A Golden Retriever puppy walking forward on a vibrant green lawn. The puppy's right front paw is lifted mid-stride, showing dark paw pads. Its mouth is open, displaying a pink tongue, and its dark eyes have clear white catchlights. The fur is a warm golden-tan, highly textured on the face and chest. The background consists of heavily blurred dark green trees, a small patch of blue sky at the top center, and faint pink floral shapes on the right. Lighting is bright, directional sunlight coming from the upper right, casting soft shadows to the left and under the dog. undefined",
+      "evidenceUsed": [
+        "The puppy is centrally framed, dominating the foreground and establishing immediate eye contact. The lifted right paw creates a subtle diagonal leading line drawing the eye up to the face. The low camera angle places the viewer at the puppy's eye level, enhancing intimacy. A shallow depth of field isolates the subject perfectly from the background, utilizing negative space effectively.",
+        "Sharpness is excellent across the focal plane, specifically the eyes, nose, and front fur. Exposure is balanced, retaining detail in the bright golden highlights and darker shadows under the chin. Color grading leans warm, emphasizing the sunny atmosphere. Minor structural blending is visible on the lifted paw's pads, a common diffusion model artifact.",
+        null
+      ],
+      "worthIt": {
+        "verdict": "maybe",
+        "explanation": "Overall readiness: 63%. You said \"packaging-time\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks a defined style or character sheet for series production."
+      },
+      "readinessScores": [
+        {
+          "axis": "Creative Clarity",
+          "score": 80,
+          "note": "The subject and composition are clear, though the concept is generic."
+        },
+        {
+          "axis": "Technical Quality",
+          "score": 80,
+          "note": "High fidelity, but minor diffusion artifacts on the paw pads need correction."
+        },
+        {
+          "axis": "Consistency Control",
+          "score": 40,
+          "note": "Single-image output lacks a defined style or character sheet for series production."
+        },
+        {
+          "axis": "Audience Fit",
+          "score": 100,
+          "note": "High-demand subject matter with broad commercial appeal."
+        },
+        {
+          "axis": "Differentiation",
+          "score": 40,
+          "note": "The image is indistinguishable from thousands of other stock AI puppy photos."
+        },
+        {
+          "axis": "Packaging Readiness",
+          "score": 40,
+          "note": "Lacks the necessary variations, character consistency, and metadata for a product suite."
+        }
+      ],
+      "overallReadiness": 63,
+      "alignmentVerdict": "portfolio-only",
+      "coachingRoadmap": [
+        {
+          "title": "Quick Wins",
+          "timeEstimate": "20-30 minutes",
+          "actions": [
+            "Clean up existing artifacts",
+            "Apply a signature color grade",
+            "Upscale to 4K resolution"
+          ]
+        },
+        {
+          "title": "Level Up",
+          "timeEstimate": "60-90 minutes",
+          "actions": [
+            "Develop a consistent character seed",
+            "Create a 5-image 'day in the life' set"
+          ]
+        },
+        {
+          "title": "Market Ready",
+          "timeEstimate": "Later",
+          "actions": [
+            "Package as a stock photography bundle",
+            "Create a licensing agreement"
+          ]
+        }
+      ],
+      "pricingGuidance": {
+        "tiers": [],
+        "currentTier": "Starter",
+        "currentRange": "$10-25",
+        "potentialRange": "$100+",
+        "rationale": ""
+      },
+      "topPainPoint": "You said \"packaging-time\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks a defined style or character sheet for series production.",
+      "whereToStart": {
+        "priority": "Clean up existing artifacts",
+        "steps": [
+          "Clean up existing artifacts",
+          "Apply a signature color grade",
+          "Upscale to 4K resolution"
+        ]
+      },
+      "contentCritique": {
+        "strengths": [
+          "Creative Clarity: The subject and composition are clear, though the concept is generic.",
+          "Technical Quality: High fidelity, but minor diffusion artifacts on the paw pads need correction.",
+          "Audience Fit: High-demand subject matter with broad commercial appeal."
+        ],
+        "weaknesses": [
+          "Consistency Control (40%): Single-image output lacks a defined style or character sheet for series production.",
+          "Differentiation (40%): The image is indistinguishable from thousands of other stock AI puppy photos.",
+          "Packaging Readiness (40%): Lacks the necessary variations, character consistency, and metadata for a product suite."
+        ],
+        "improvements": [
+          "Clean up existing artifacts",
+          "Apply a signature color grade",
+          "Upscale to 4K resolution"
+        ]
+      },
+      "nextSteps": [
+        "Clean up existing artifacts",
+        "Apply a signature color grade",
+        "Develop a consistent character seed",
+        "Re-analyze after improvements"
+      ],
+      "realTalk": "63% overall readiness. undefined You said \"packaging-time\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks a defined style or character sheet for series production.",
+      "KAIZORAStrategy": {
+        "strategyType": "Improve first, then publish",
+        "features": [
+          "High-quality preview",
+          "Detailed metadata",
+          "Multiple licensing tiers"
+        ],
+        "rationale": "Focus on Quick Wins before publishing."
+      },
+      "marketReality": {
+        "demand": "medium",
+        "competition": "medium",
+        "analysis": "You said \"packaging-time\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks a defined style or character sheet for series production."
+      },
+      "whatISaw": {
+        "subjects": "A Golden Retriever puppy walking forward on a vibrant green lawn. The puppy's right front paw is lifted mid-stride, showing dark paw pads. Its mouth is open, displaying a pink tongue, and its dark eyes have clear white catchlights. The fur is a warm golden-tan, highly textured on the face and chest. The background consists of heavily blurred dark green trees, a small patch of blue sky at the top center, and faint pink floral shapes on the right. Lighting is bright, directional sunlight coming from the upper right, casting soft shadows to the left and under the dog.",
+        "lighting": "See technical assessment",
+        "color": "See technical assessment",
+        "composition": "The puppy is centrally framed, dominating the foreground and establishing immediate eye contact. The lifted right paw creates a subtle diagonal leading line drawing the eye up to the face. The low camera angle places the viewer at the puppy's eye level, enhancing intimacy. A shallow depth of field isolates the subject perfectly from the background, utilizing negative space effectively.",
+        "mood": "See visual description"
+      },
+      "whatYouToldMe": {
+        "goal": "monetize",
+        "pain": "packaging-time",
+        "constraints": "no-deadline",
+        "buyerType": "product"
+      },
+      "realAlignment": {
+        "score": 4,
+        "gapSummary": "The creator aims for 'cinema' quality but is producing 'stock' quality. The lack of a cohesive visual identity prevents this from being a scalable product.",
+        "blindSpots": [
+          "Lack of character consistency",
+          "Absence of unique artistic signature",
+          "No defined target niche"
+        ]
+      },
+      "myRecommendation": {
+        "verdict": "Refine",
+        "reasoning": "You said \"packaging-time\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks a defined style or character sheet for series production. Overall readiness: 63%."
+      },
+      "exactEdits": [
+        {
+          "edit": "Inpaint the paw pads to correct structural blending artifacts.",
+          "why": "Fixes the most obvious technical failure point.",
+          "effort": "Quick"
+        },
+        {
+          "edit": "Apply a consistent color grade (LUT) to the image.",
+          "why": "Establishes a 'cinematic' look rather than raw AI output.",
+          "effort": "Quick"
+        },
+        {
+          "edit": "Generate 5 variations of the same puppy in different poses.",
+          "why": "Essential for building a usable asset library.",
+          "effort": "Medium"
+        }
+      ],
+      "honestPricing": {
+        "low": 5,
+        "high": 150,
+        "currency": "USD",
+        "reasoning": "Stock photography pricing is highly competitive; differentiation is required to command the higher end.",
+        "comparable": "Adobe Stock / Shutterstock"
+      },
+      "fastestPath": [
+        {
+          "step": "Define a unique visual style (e.g., 'warm cinematic realism').",
+          "timeEstimate": "15 mins"
+        },
+        {
+          "step": "Create a character reference sheet for the puppy.",
+          "timeEstimate": "45 mins"
+        },
+        {
+          "step": "Batch generate 10 high-quality assets using the reference.",
+          "timeEstimate": "30 mins"
+        }
+      ],
+      "evidenceDetails": {
+        "fileCount": 1,
+        "resolution": "auto-detected",
+        "framesAnalyzed": 1,
+        "modelUsed": "gemini-3.1-pro-preview -> gemini-3.1-flash-lite",
+        "analysisTimestamp": "2026-07-16T14:38:26.649Z",
+        "signalsSummary": "No client signals",
+        "statusLog": [
+          "Starting Gemini Vision Analysis (6-Axis + Coaching + Pricing)...",
+          "Gemini Call 1: Visual Description...",
+          "[gemini] generateContent:gemini-3.1-pro-preview attempt using gemini-3.1-pro-preview (requested gemini-3.1-pro-preview)",
+          "[gemini] generateContent:gemini-3.1-pro-preview success using gemini-3.1-pro-preview",
+          "Gemini Call 1 complete with gemini-3.1-pro-preview.",
+          "Gemini Fast Call 2: Scoring + Alignment + Pricing...",
+          "Gemini Fast Call 2 complete with gemini-3.1-flash-lite."
+        ]
+      },
+      "analysisStatusLog": [
+        "Starting Gemini Vision Analysis (6-Axis + Coaching + Pricing)...",
+        "Gemini Call 1: Visual Description...",
+        "[gemini] generateContent:gemini-3.1-pro-preview attempt using gemini-3.1-pro-preview (requested gemini-3.1-pro-preview)",
+        "[gemini] generateContent:gemini-3.1-pro-preview success using gemini-3.1-pro-preview",
+        "Gemini Call 1 complete with gemini-3.1-pro-preview.",
+        "Gemini Fast Call 2: Scoring + Alignment + Pricing...",
+        "Gemini Fast Call 2 complete with gemini-3.1-flash-lite."
+      ],
+      "closingQuestion": "What specific commercial niche (e.g., pet food ads, children's books) are you targeting with this asset?",
+      "fallbackEvaluation": {
+        "vision_evidence": "A Golden Retriever puppy walking forward on a vibrant green lawn. The puppy's right front paw is lifted mid-stride, showing dark paw pads. Its mouth is open, displaying a pink tongue, and its dark eyes have clear white catchlights. The fur is a warm golden-tan, highly textured on the face and chest. The background consists of heavily blurred dark green trees, a small patch of blue sky at the top center, and faint pink floral shapes on the right. Lighting is bright, directional sunlight coming from the upper right, casting soft shadows to the left and under the dog.",
+        "decision": "FLAG",
+        "confidence": 63,
+        "scores": {
+          "technical_quality": 80,
+          "market_fit": 100,
+          "policy_risk": 0,
+          "originality": 40
+        },
+        "reasons": [],
+        "recommended_fixes": [],
+        "marketplace_recommendation": {
+          "should_list": false,
+          "category": "images",
+          "title": "monetize Asset — 63% Market Ready",
+          "tags": [
+            "product",
+            "monetize",
+            "digital asset"
+          ],
+          "price_range": "$5-$10",
+          "next_step": "Clean up existing artifacts"
+        }
+      }
+    },
+    "imageAnalysis": {
+      "gemini_analysis": {
+        "quality_score": 60,
+        "what_i_see": "A Golden Retriever puppy walking forward on a vibrant green lawn. The puppy's right front paw is lifted mid-stride, showing dark paw pads. Its mouth is open, displaying a pink tongue, and its dark eyes have clear white catchlights. The fur is a warm golden-tan, highly textured on the face and chest. The background consists of heavily blurred dark green trees, a small patch of blue sky at the top center, and faint pink floral shapes on the right. Lighting is bright, directional sunlight coming from the upper right, casting soft shadows to the left and under the dog.",
+        "composition": "The puppy is centrally framed, dominating the foreground and establishing immediate eye contact. The lifted right paw creates a subtle diagonal leading line drawing the eye up to the face. The low camera angle places the viewer at the puppy's eye level, enhancing intimacy. A shallow depth of field isolates the subject perfectly from the background, utilizing negative space effectively.",
+        "technical_assessment": "Sharpness is excellent across the focal plane, specifically the eyes, nose, and front fur. Exposure is balanced, retaining detail in the bright golden highlights and darker shadows under the chin. Color grading leans warm, emphasizing the sunny atmosphere. Minor structural blending is visible on the lifted paw's pads, a common diffusion model artifact."
+      },
+      "readinessScore": {
+        "creativeClarity": {
+          "score": 80,
+          "justification": "The subject and composition are clear, though the concept is generic."
+        },
+        "technicalQuality": {
+          "score": 80,
+          "justification": "High fidelity, but minor diffusion artifacts on the paw pads need correction."
+        },
+        "consistencyControl": {
+          "score": 40,
+          "justification": "Single-image output lacks a defined style or character sheet for series production."
+        },
+        "audienceFit": {
+          "score": 100,
+          "justification": "High-demand subject matter with broad commercial appeal."
+        },
+        "differentiation": {
+          "score": 40,
+          "justification": "The image is indistinguishable from thousands of other stock AI puppy photos."
+        },
+        "packagingReadiness": {
+          "score": 40,
+          "justification": "Lacks the necessary variations, character consistency, and metadata for a product suite."
+        },
+        "total": 63
+      },
+      "coachingRoadmap": [
+        {
+          "title": "Quick Wins",
+          "timeEstimate": "20-30 minutes",
+          "actions": [
+            "Clean up existing artifacts",
+            "Apply a signature color grade",
+            "Upscale to 4K resolution"
+          ]
+        },
+        {
+          "title": "Level Up",
+          "timeEstimate": "60-90 minutes",
+          "actions": [
+            "Develop a consistent character seed",
+            "Create a 5-image 'day in the life' set"
+          ]
+        },
+        {
+          "title": "Market Ready",
+          "timeEstimate": "Later",
+          "actions": [
+            "Package as a stock photography bundle",
+            "Create a licensing agreement"
+          ]
+        }
+      ],
+      "tieredPricing": {
+        "starter": {
+          "label": "Starter",
+          "range": "$5-$10",
+          "includes": [
+            "Single high-res image",
+            "Personal use license"
+          ]
+        },
+        "standard": {
+          "label": "Standard",
+          "range": "$25-$50",
+          "includes": [
+            "5-image themed set",
+            "Commercial use license"
+          ]
+        },
+        "premium": {
+          "label": "Premium",
+          "range": "$100+",
+          "includes": [
+            "Full character set (20+ images)",
+            "Exclusive rights"
+          ]
+        },
+        "upgradeJustification": "Value scales with the utility of the asset for the buyer's specific project needs."
+      },
+      "consensus": {
+        "overall_quality": "good",
+        "monetization_readiness": "needs-refinement",
+        "confidence": 63
+      },
+      "overallReadiness": 63,
+      "alignmentVerdict": "portfolio-only",
+      "readinessScores": [
+        {
+          "axis": "Creative Clarity",
+          "score": 80,
+          "note": "The subject and composition are clear, though the concept is generic."
+        },
+        {
+          "axis": "Technical Quality",
+          "score": 80,
+          "note": "High fidelity, but minor diffusion artifacts on the paw pads need correction."
+        },
+        {
+          "axis": "Consistency Control",
+          "score": 40,
+          "note": "Single-image output lacks a defined style or character sheet for series production."
+        },
+        {
+          "axis": "Audience Fit",
+          "score": 100,
+          "note": "High-demand subject matter with broad commercial appeal."
+        },
+        {
+          "axis": "Differentiation",
+          "score": 40,
+          "note": "The image is indistinguishable from thousands of other stock AI puppy photos."
+        },
+        {
+          "axis": "Packaging Readiness",
+          "score": 40,
+          "note": "Lacks the necessary variations, character consistency, and metadata for a product suite."
+        }
+      ],
+      "pricingTiers": [],
+      "topPainPoint": "You said \"packaging-time\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks a defined style or character sheet for series production.",
+      "visualDescription": "A Golden Retriever puppy walking forward on a vibrant green lawn. The puppy's right front paw is lifted mid-stride, showing dark paw pads. Its mouth is open, displaying a pink tongue, and its dark eyes have clear white catchlights. The fur is a warm golden-tan, highly textured on the face and chest. The background consists of heavily blurred dark green trees, a small patch of blue sky at the top center, and faint pink floral shapes on the right. Lighting is bright, directional sunlight coming from the upper right, casting soft shadows to the left and under the dog.",
+      "evidenceUsed": [
+        "The puppy is centrally framed, dominating the foreground and establishing immediate eye contact. The lifted right paw creates a subtle diagonal leading line drawing the eye up to the face. The low camera angle places the viewer at the puppy's eye level, enhancing intimacy. A shallow depth of field isolates the subject perfectly from the background, utilizing negative space effectively.",
+        "Sharpness is excellent across the focal plane, specifically the eyes, nose, and front fur. Exposure is balanced, retaining detail in the bright golden highlights and darker shadows under the chin. Color grading leans warm, emphasizing the sunny atmosphere. Minor structural blending is visible on the lifted paw's pads, a common diffusion model artifact.",
+        null
+      ],
+      "whatISaw": {
+        "subjects": "A Golden Retriever puppy walking forward on a vibrant green lawn. The puppy's right front paw is lifted mid-stride, showing dark paw pads. Its mouth is open, displaying a pink tongue, and its dark eyes have clear white catchlights. The fur is a warm golden-tan, highly textured on the face and chest. The background consists of heavily blurred dark green trees, a small patch of blue sky at the top center, and faint pink floral shapes on the right. Lighting is bright, directional sunlight coming from the upper right, casting soft shadows to the left and under the dog.",
+        "lighting": "See technical assessment",
+        "color": "See technical assessment",
+        "composition": "The puppy is centrally framed, dominating the foreground and establishing immediate eye contact. The lifted right paw creates a subtle diagonal leading line drawing the eye up to the face. The low camera angle places the viewer at the puppy's eye level, enhancing intimacy. A shallow depth of field isolates the subject perfectly from the background, utilizing negative space effectively.",
+        "mood": "See visual description"
+      },
+      "whatYouToldMe": {
+        "goal": "monetize",
+        "pain": "packaging-time",
+        "constraints": "no-deadline",
+        "buyerType": "product"
+      },
+      "realAlignment": {
+        "score": 4,
+        "gapSummary": "The creator aims for 'cinema' quality but is producing 'stock' quality. The lack of a cohesive visual identity prevents this from being a scalable product.",
+        "blindSpots": [
+          "Lack of character consistency",
+          "Absence of unique artistic signature",
+          "No defined target niche"
+        ]
+      },
+      "myRecommendation": {
+        "verdict": "Refine",
+        "reasoning": "You said \"packaging-time\" is your biggest challenge (goal: monetize) — your weakest area is Consistency Control (40%): Single-image output lacks a defined style or character sheet for series production. Overall readiness: 63%."
+      },
+      "exactEdits": [
+        {
+          "edit": "Inpaint the paw pads to correct structural blending artifacts.",
+          "why": "Fixes the most obvious technical failure point.",
+          "effort": "Quick"
+        },
+        {
+          "edit": "Apply a consistent color grade (LUT) to the image.",
+          "why": "Establishes a 'cinematic' look rather than raw AI output.",
+          "effort": "Quick"
+        },
+        {
+          "edit": "Generate 5 variations of the same puppy in different poses.",
+          "why": "Essential for building a usable asset library.",
+          "effort": "Medium"
+        }
+      ],
+      "honestPricing": {
+        "low": 5,
+        "high": 150,
+        "currency": "USD",
+        "reasoning": "Stock photography pricing is highly competitive; differentiation is required to command the higher end.",
+        "comparable": "Adobe Stock / Shutterstock"
+      },
+      "fastestPath": [
+        {
+          "step": "Define a unique visual style (e.g., 'warm cinematic realism').",
+          "timeEstimate": "15 mins"
+        },
+        {
+          "step": "Create a character reference sheet for the puppy.",
+          "timeEstimate": "45 mins"
+        },
+        {
+          "step": "Batch generate 10 high-quality assets using the reference.",
+          "timeEstimate": "30 mins"
+        }
+      ],
+      "evidenceDetails": {
+        "fileCount": 1,
+        "resolution": "auto-detected",
+        "framesAnalyzed": 1,
+        "modelUsed": "gemini-3.1-pro-preview -> gemini-3.1-flash-lite",
+        "analysisTimestamp": "2026-07-16T14:38:26.649Z",
+        "signalsSummary": "No client signals",
+        "statusLog": [
+          "Starting Gemini Vision Analysis (6-Axis + Coaching + Pricing)...",
+          "Gemini Call 1: Visual Description...",
+          "[gemini] generateContent:gemini-3.1-pro-preview attempt using gemini-3.1-pro-preview (requested gemini-3.1-pro-preview)",
+          "[gemini] generateContent:gemini-3.1-pro-preview success using gemini-3.1-pro-preview",
+          "Gemini Call 1 complete with gemini-3.1-pro-preview.",
+          "Gemini Fast Call 2: Scoring + Alignment + Pricing...",
+          "Gemini Fast Call 2 complete with gemini-3.1-flash-lite."
+        ]
+      },
+      "closingQuestion": "What specific commercial niche (e.g., pet food ads, children's books) are you targeting with this asset?",
+      "fallbackEvaluation": {
+        "vision_evidence": "A Golden Retriever puppy walking forward on a vibrant green lawn. The puppy's right front paw is lifted mid-stride, showing dark paw pads. Its mouth is open, displaying a pink tongue, and its dark eyes have clear white catchlights. The fur is a warm golden-tan, highly textured on the face and chest. The background consists of heavily blurred dark green trees, a small patch of blue sky at the top center, and faint pink floral shapes on the right. Lighting is bright, directional sunlight coming from the upper right, casting soft shadows to the left and under the dog.",
+        "decision": "FLAG",
+        "confidence": 63,
+        "scores": {
+          "technical_quality": 80,
+          "market_fit": 100,
+          "policy_risk": 0,
+          "originality": 40
+        },
+        "reasons": [],
+        "recommended_fixes": [],
+        "marketplace_recommendation": {
+          "should_list": false,
+          "category": "images",
+          "title": "monetize Asset — 63% Market Ready",
+          "tags": [
+            "product",
+            "monetize",
+            "digital asset"
+          ],
+          "price_range": "$5-$10",
+          "next_step": "Clean up existing artifacts"
+        }
+      }
+    },
+    "creditCost": 10
+  },
+  "error": null
+}

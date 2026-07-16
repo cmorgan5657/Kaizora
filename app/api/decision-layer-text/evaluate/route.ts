@@ -11,6 +11,7 @@ import {
   summarizeFiles,
   writeDecisionLayerAnalysisLog,
 } from "@/lib/decisionLayerAnalysisLogs";
+import { shouldExposeDebugUi } from "@/lib/debugLogs";
 
 const maskSecret = (value?: string | null) => {
   if (!value) return "Not configured";
@@ -21,6 +22,7 @@ const maskSecret = (value?: string | null) => {
 export const maxDuration = 120; // 2 minutes max for text processing
 
 export async function POST(req: NextRequest) {
+  const exposeDebugUi = shouldExposeDebugUi("KAIZORA_LOG_GEMINI", false);
   const startedAt = new Date().toISOString();
   let requestSummary: Record<string, unknown> = {};
 
@@ -289,19 +291,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       evaluation,
-      debug: {
-        api: {
-          provider: "Google Gemini",
-          models: ["gemini-3.1-pro-preview"],
-          keys: [
-            {
-              label: "GEMINI_API_KEY",
-              masked: maskSecret(process.env.GEMINI_API_KEY),
+      ...(exposeDebugUi
+        ? {
+            debug: {
+              api: {
+                provider: "Google Gemini",
+                models: ["gemini-3.1-pro-preview"],
+                keys: [
+                  {
+                    label: "GEMINI_API_KEY",
+                    masked: maskSecret(process.env.GEMINI_API_KEY),
+                  },
+                ],
+              },
+              analysis_log_file: analysisLogFile,
             },
-          ],
-        },
-        analysis_log_file: analysisLogFile,
-      },
+          }
+        : {}),
     });
   } catch (error: any) {
     console.error("Text evaluation error:", error);
@@ -318,19 +324,23 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: error.message || "Failed to evaluate text",
-        debug: {
-          api: {
-            provider: "Google Gemini",
-            models: ["gemini-3.1-pro-preview"],
-            keys: [
-              {
-                label: "GEMINI_API_KEY",
-                masked: maskSecret(process.env.GEMINI_API_KEY),
+        ...(exposeDebugUi
+          ? {
+              debug: {
+                api: {
+                  provider: "Google Gemini",
+                  models: ["gemini-3.1-pro-preview"],
+                  keys: [
+                    {
+                      label: "GEMINI_API_KEY",
+                      masked: maskSecret(process.env.GEMINI_API_KEY),
+                    },
+                  ],
+                  analysis_log_file: analysisLogFile,
+                },
               },
-            ],
-            analysis_log_file: analysisLogFile,
-          },
-        },
+            }
+          : {}),
       },
       { status: 500 },
     );
