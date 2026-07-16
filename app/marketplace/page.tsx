@@ -2750,9 +2750,9 @@ export default function MarketplacePage() {
                     const videoUrl = storageUrl(asset?.storage_path);
                     const contentType = asset?.content_type ?? "asset";
                     const useVideoPreview = contentType === "video" && !!videoUrl;
-                    const videoPosterUrl =
+                    const videoPosterUrl: string | undefined =
                       asset?.thumbnail_path && !isVideoPreviewPath(asset.thumbnail_path)
-                        ? storageUrl(asset.thumbnail_path)
+                        ? storageUrl(asset.thumbnail_path) ?? undefined
                         : undefined;
                     const displayType = contentType.charAt(0).toUpperCase() + contentType.slice(1);
                     const licenseBadge = getLicenseBadge(listing.license_type);
