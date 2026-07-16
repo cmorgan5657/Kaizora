@@ -124,11 +124,21 @@ export default function ReviewPage() {
     }
   }
 
-  const detectContentType = (url: string, originalType: string) => {
+  const detectContentType = (
+    url: string,
+    originalType: string,
+    aiMode?: string,
+  ) => {
+    if (aiMode === "video" || aiMode === "vid2vid") return "video";
+    if (aiMode === "audio" || aiMode === "aud2aud") return "audio";
+
     const u = url.toLowerCase();
     if (u.includes(".mp4") || u.includes("video")) return "video";
     if (u.includes(".mp3") || u.includes(".wav") || u.includes("audio"))
       return "audio";
+    if (originalType === "video" || originalType === "audio") {
+      return originalType;
+    }
     return "image";
   };
 
@@ -189,6 +199,7 @@ export default function ReviewPage() {
       const contentType = detectContentType(
         generatedUrl || "",
         asset.content_type,
+        remixData?.aiMode,
       );
       const uploadedPath = await uploadFromUrl(
         generatedUrl,
@@ -211,7 +222,7 @@ export default function ReviewPage() {
         description: `Remixed with ${remixData?.modeLabel || "AI"} — ${remixData?.modelLabel || ""}`,
         content_type: contentType,
         storage_path: uploadedPath,
-        thumbnail_path: uploadedPath,
+        thumbnail_path: contentType === "image" ? uploadedPath : null,
         is_public: false,
         is_remix: true,
         remix_type: "ai_regenerate",
@@ -264,6 +275,7 @@ export default function ReviewPage() {
       const contentType = detectContentType(
         remixData.generatedUrl,
         asset.content_type,
+        remixData?.aiMode,
       );
       a.download = `remixed_${asset.title || "asset"}.${contentType === "video" ? "mp4" : contentType === "audio" ? "mp3" : "png"}`;
       document.body.appendChild(a);
@@ -292,7 +304,7 @@ export default function ReviewPage() {
   const imageUrl = storageUrl(asset.storage_path);
   const generatedUrl = remixData?.generatedUrl;
   const contentType = generatedUrl
-    ? detectContentType(generatedUrl, asset.content_type)
+    ? detectContentType(generatedUrl, asset.content_type, remixData?.aiMode)
     : "image";
 
   return (
@@ -558,7 +570,12 @@ export default function ReviewPage() {
                         ? [
                             {
                               name: `remixed_${asset.title}.${contentType === "video" ? "mp4" : contentType === "audio" ? "mp3" : "png"}`,
-                              type: contentType,
+                              type:
+                                contentType === "video"
+                                  ? "video/mp4"
+                                  : contentType === "audio"
+                                    ? "audio/mpeg"
+                                    : "image/png",
                               base64: generatedUrl,
                             },
                           ]

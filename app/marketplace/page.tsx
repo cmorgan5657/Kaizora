@@ -1015,6 +1015,10 @@ export default function MarketplacePage() {
     if (!path) return null;
     return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/assets/${path}`;
   }
+  function isVideoPreviewPath(path?: string | null) {
+    if (!path) return false;
+    return /\.(mp4|mov|webm|mkv|m4v|avi)$/i.test(path);
+  }
   function tempStorageUrl(path?: string | null) {
     if (!path) return null;
     return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${TEMP_ASSET_BUCKET}/${path}`;
@@ -2743,7 +2747,12 @@ export default function MarketplacePage() {
                     const asset = listing._asset;
                     const isPaid = listing.price_cents && listing.price_cents > 0;
                     const imgUrl = storageUrl(asset?.thumbnail_path || asset?.storage_path);
+                    const videoUrl = storageUrl(asset?.storage_path);
                     const contentType = asset?.content_type ?? "asset";
+                    const useVideoPreview =
+                      contentType === "video" &&
+                      (!asset?.thumbnail_path ||
+                        isVideoPreviewPath(asset.thumbnail_path));
                     const displayType = contentType.charAt(0).toUpperCase() + contentType.slice(1);
                     const licenseBadge = getLicenseBadge(listing.license_type);
                     const priceDisplay = isPaid ? `$${(listing.price_cents / 100).toFixed(2)}` : "Free";
@@ -2769,7 +2778,17 @@ export default function MarketplacePage() {
                       >
                         {/* Image */}
                         <div className="relative aspect-[4/3] bg-[#0b0b0b] overflow-hidden flex-shrink-0">
-                          {imgUrl ? (
+                          {useVideoPreview && videoUrl ? (
+                            <div className="relative w-full h-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.18))] p-2">
+                              <video
+                                src={videoUrl}
+                                className="w-full h-full object-cover rounded-xl group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                                muted
+                                playsInline
+                                preload="metadata"
+                              />
+                            </div>
+                          ) : imgUrl ? (
                             <div className="relative w-full h-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.18))] p-2">
                               <img
                                 src={imgUrl}
