@@ -120,6 +120,18 @@ type BrowseItem = {
   hasThumbnail?: boolean;
 };
 
+type FeaturedDropItem = {
+  id: string;
+  title: string;
+  description: string;
+  model: string;
+  price: string;
+  creatorName: string;
+  contentType: string;
+  image: string | null;
+  purchaseCount: number;
+};
+
 const browseItems: BrowseItem[] = [
   {
     id: "browse-mission-to-mars-free",
@@ -201,63 +213,6 @@ const browseItems: BrowseItem[] = [
   },
 ];
 
-const featuredDrops = [
-  {
-    title: "Mission to mars",
-    prompt: "group watching the martian landscape",
-    model: "GPT-4",
-    price: "Free",
-    remixes: "0 remixes",
-    image:
-      "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Who think they can win",
-    prompt: "Mechanical owl",
-    model: "GPT-4",
-    price: "$4.99",
-    remixes: "0 remixes",
-    image:
-      "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Hamburger",
-    prompt: "Picture of hamburger",
-    model: "GPT-4",
-    price: "Free",
-    remixes: "0 remixes",
-    image:
-      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Mission to mars",
-    prompt: "Group of explorers admiring the martian landscape",
-    model: "GPT-4",
-    price: "$5",
-    remixes: "0 remixes",
-    image:
-      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Kaela",
-    prompt: "Kaela in her military suit",
-    model: "GPT-4",
-    price: "Free",
-    remixes: "0 remixes",
-    image:
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Best Content",
-    prompt: "Best content available",
-    model: "GPT-3.5",
-    price: "Free",
-    remixes: "0 remixes",
-    image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
-  },
-];
-
 function storageUrl(path?: string | null) {
   if (!path) return null;
   const { data } = supabase.storage.from("assets").getPublicUrl(path);
@@ -308,6 +263,7 @@ export default function HomePage() {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("All");
   const [marketplaceItems, setMarketplaceItems] = useState<BrowseItem[]>([]);
+  const [featuredDrops, setFeaturedDrops] = useState<FeaturedDropItem[]>([]);
   const [marketplaceLoading, setMarketplaceLoading] = useState(true);
 
   useEffect(() => {
@@ -331,14 +287,85 @@ export default function HomePage() {
       const creatorIds = [
         ...new Set(data.map((asset: any) => asset.owner_id).filter(Boolean)),
       ];
+      const assetIds = data.map((asset: any) => asset.id);
 
-      const { data: profiles } = creatorIds.length
-        ? await supabase.from("profiles").select("id, display_name").in("id", creatorIds)
-        : { data: [] as any[] };
+      const [{ data: profiles }, purchaseCountRes] = await Promise.all([
+        creatorIds.length
+          ? supabase
+              .from("profiles")
+              .select("id, display_name, created_at")
+              .in("id", creatorIds)
+          : Promise.resolve({ data: [] as any[] }),
+        assetIds.length
+          ? fetch("/api/marketplace/purchase-counts")
+              .then((r) => r.json())
+              .catch(() => ({ counts: {} }))
+          : Promise.resolve({ counts: {} }),
+      ]);
 
       const profileLookup = new Map(
         (profiles ?? []).map((profile: any) => [profile.id, profile]),
       );
+      const purchaseCountMap: Record<string, number> =
+        purchaseCountRes?.counts ?? {};
+
+      const creatorStats = new Map<
+        string,
+        {
+          creatorName: string;
+          joinedAt: number;
+          firstAssetAt: number;
+          publicAssetCount: number;
+          totalPurchases: number;
+        }
+      >();
+
+      data.forEach((asset: any) => {
+        if (!asset.owner_id) return;
+
+        const profile = profileLookup.get(asset.owner_id);
+        const assetCreatedAt = Date.parse(asset.created_at || "");
+        const joinedAt = Date.parse(profile?.created_at || "");
+        const purchaseCount = purchaseCountMap[asset.id] ?? 0;
+        const existing = creatorStats.get(asset.owner_id);
+
+        creatorStats.set(asset.owner_id, {
+          creatorName: profile?.display_name || "KAIZORA Creator",
+          joinedAt: Number.isNaN(joinedAt) ? Number.MAX_SAFE_INTEGER : joinedAt,
+          firstAssetAt: existing
+            ? Math.min(
+                existing.firstAssetAt,
+                Number.isNaN(assetCreatedAt)
+                  ? Number.MAX_SAFE_INTEGER
+                  : assetCreatedAt,
+              )
+            : Number.isNaN(assetCreatedAt)
+              ? Number.MAX_SAFE_INTEGER
+              : assetCreatedAt,
+          publicAssetCount: (existing?.publicAssetCount ?? 0) + 1,
+          totalPurchases: (existing?.totalPurchases ?? 0) + purchaseCount,
+        });
+      });
+
+      const rankedCreatorIds = Array.from(creatorStats.entries())
+        .sort((a, b) => {
+          const left = a[1];
+          const right = b[1];
+
+          if (right.totalPurchases !== left.totalPurchases) {
+            return right.totalPurchases - left.totalPurchases;
+          }
+          if (right.publicAssetCount !== left.publicAssetCount) {
+            return right.publicAssetCount - left.publicAssetCount;
+          }
+          if (left.joinedAt !== right.joinedAt) {
+            return left.joinedAt - right.joinedAt;
+          }
+          return left.firstAssetAt - right.firstAssetAt;
+        })
+        .map(([creatorId]) => creatorId);
+
+      const topCreatorIds = new Set(rankedCreatorIds.slice(0, 4));
 
       const formatted: BrowseItem[] = data
         .map((asset: any) => {
@@ -380,7 +407,83 @@ export default function HomePage() {
         })
         .slice(0, 6);
 
+      const featuredSource = data.filter((asset: any) => {
+        const type = String(asset.content_type || "").toLowerCase();
+        const imagePath =
+          type === "image"
+            ? asset.storage_path || asset.thumbnail_path
+            : asset.thumbnail_path;
+
+        return topCreatorIds.has(asset.owner_id) && !!imagePath;
+      });
+
+      const fallbackFeaturedSource = data.filter((asset: any) => {
+        const type = String(asset.content_type || "").toLowerCase();
+        const imagePath =
+          type === "image"
+            ? asset.storage_path || asset.thumbnail_path
+            : asset.thumbnail_path;
+        return !!imagePath;
+      });
+
+      const featuredPool =
+        featuredSource.length >= 3 ? featuredSource : fallbackFeaturedSource;
+
+      const featuredFormatted: FeaturedDropItem[] = featuredPool
+        .sort((left: any, right: any) => {
+          const leftStats = creatorStats.get(left.owner_id);
+          const rightStats = creatorStats.get(right.owner_id);
+          const leftPurchases = purchaseCountMap[left.id] ?? 0;
+          const rightPurchases = purchaseCountMap[right.id] ?? 0;
+
+          if (rightPurchases !== leftPurchases) {
+            return rightPurchases - leftPurchases;
+          }
+          if (
+            (rightStats?.totalPurchases ?? 0) !== (leftStats?.totalPurchases ?? 0)
+          ) {
+            return (rightStats?.totalPurchases ?? 0) - (leftStats?.totalPurchases ?? 0);
+          }
+          return (
+            Date.parse(right.created_at || "") - Date.parse(left.created_at || "")
+          );
+        })
+        .slice(0, 6)
+        .map((asset: any) => {
+          const profile = profileLookup.get(asset.owner_id);
+          const creator = creatorStats.get(asset.owner_id);
+          const purchaseCount = purchaseCountMap[asset.id] ?? 0;
+          const price =
+            !asset.price_cents || Number(asset.price_cents) === 0
+              ? "Free"
+              : `$${(Number(asset.price_cents) / 100).toFixed(2)}`;
+          const normalizedType = String(asset.content_type || "image").toLowerCase();
+          const imagePath =
+            normalizedType === "image"
+              ? asset.storage_path || asset.thumbnail_path
+              : asset.thumbnail_path;
+          const descriptionSource =
+            asset.description ||
+            (Array.isArray(asset.tags) && asset.tags.length > 0
+              ? asset.tags.join(" • ")
+              : "Marketplace-ready creative asset from a proven KAIZORA seller.");
+
+          return {
+            id: asset.id,
+            title: asset.title || "Untitled",
+            description: String(descriptionSource).slice(0, 110),
+            model: asset.ai_model || "AI Content",
+            price,
+            creatorName: profile?.display_name || "KAIZORA Creator",
+            contentType:
+              normalizedType.charAt(0).toUpperCase() + normalizedType.slice(1),
+            image: storageUrl(imagePath),
+            purchaseCount,
+          };
+        });
+
       setMarketplaceItems(formatted);
+      setFeaturedDrops(featuredFormatted);
       setMarketplaceLoading(false);
     }
 
@@ -784,48 +887,62 @@ export default function HomePage() {
           <SectionHeading
             title="Featured"
             accent="Drops"
-            subtitle="Discover the most popular AI-generated content waiting for its second life"
+            subtitle="Marketplace picks from top-performing and long-time KAIZORA sellers"
           />
 
           <div className="mt-16 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
             {featuredDrops.map((item, index) => (
               <article
-                key={`${item.title}-${index}`}
+                key={item.id || `${item.title}-${index}`}
                 className="overflow-hidden rounded-[22px] border border-[#4d1526] bg-[#0c1018] shadow-[0_8px_28px_rgba(0,0,0,0.16)]"
               >
                 <div className="relative h-[280px] overflow-hidden">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="h-full w-full object-cover"
-                  />
+                  {item.image ? (
+                    <div className="h-full w-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.18))] p-3">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="h-full w-full rounded-[18px] object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#151923] text-white/35">
+                      <div className="text-center">
+                        <Sparkles className="mx-auto h-10 w-10" />
+                        <p className="mt-3 text-sm uppercase tracking-[0.2em] text-white/25">
+                          featured asset
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <button className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-black/45 text-white/85 backdrop-blur-sm">
                     <Heart className="h-6 w-6" />
                   </button>
                 </div>
                 <div className="p-7">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex gap-3">
-                      <span className="rounded-full bg-[#4b2e77] px-3 py-1 text-sm font-medium text-[#ebd5ff]">
-                        image
-                      </span>
-                      <span className="rounded-full bg-[#6e5721] px-3 py-1 text-sm font-medium text-[#ffe06b]">
-                        Paid
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex min-w-0 flex-1 flex-wrap gap-3">
+                      <span className="rounded-full bg-[#4b2e77] px-3 py-1 text-sm font-medium text-[#f1ddff]">
+                        {item.contentType}
                       </span>
                     </div>
-                    <div className="text-right">
+                    <div className="shrink-0 text-right">
                       <p className="text-xl font-semibold text-white">{item.price}</p>
-                      <p className="mt-1 text-base text-white/38">{item.remixes}</p>
+                      <p className="mt-1 text-sm text-white/55">
+                        {item.purchaseCount} sale{item.purchaseCount === 1 ? "" : "s"}
+                      </p>
                     </div>
                   </div>
 
-                  <h3 className="mt-5 text-xl font-semibold">{item.title}</h3>
-                  <div className="mt-4 rounded-xl bg-black/35 px-5 py-4 font-mono text-base text-white/82">
-                    {item.prompt}
+                  <h3 className="mt-5 text-2xl font-semibold tracking-tight text-white">
+                    {item.title}
+                  </h3>
+                  <div className="mt-4 min-h-[104px] rounded-xl border border-white/6 bg-black/45 px-5 py-4 text-base leading-7 text-white/92">
+                    {item.description}
                   </div>
-                  <div className="mt-4 flex items-center justify-between text-base text-white/50">
-                    <span>via {item.model}</span>
-                    <span>by @Bill</span>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-white/68">
+                    <span className="truncate">via {item.model}</span>
+                    <span className="truncate">by {item.creatorName}</span>
                   </div>
                   <div className="mt-7 grid grid-cols-2 gap-4">
                     <button className="rounded-xl border border-white/8 bg-transparent px-5 py-3 text-lg font-medium text-white">
