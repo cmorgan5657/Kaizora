@@ -115,6 +115,9 @@ type BrowseItem = {
   price: string;
   author: string;
   image: string | null;
+  mediaKind: "image" | "video" | "audio" | "text" | "code";
+  mediaSrc?: string | null;
+  hasThumbnail?: boolean;
 };
 
 const browseItems: BrowseItem[] = [
@@ -127,6 +130,9 @@ const browseItems: BrowseItem[] = [
     author: "Bill",
     image:
       "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
+    mediaKind: "image",
+    mediaSrc: null,
+    hasThumbnail: true,
   },
   {
     id: "browse-who-think-they-can-win",
@@ -137,6 +143,9 @@ const browseItems: BrowseItem[] = [
     author: "Bill",
     image:
       "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1200&q=80",
+    mediaKind: "image",
+    mediaSrc: null,
+    hasThumbnail: true,
   },
   {
     id: "browse-hamburger-free",
@@ -147,6 +156,9 @@ const browseItems: BrowseItem[] = [
     author: "Bill",
     image:
       "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80",
+    mediaKind: "image",
+    mediaSrc: null,
+    hasThumbnail: true,
   },
   {
     id: "browse-mission-to-mars-five",
@@ -157,6 +169,9 @@ const browseItems: BrowseItem[] = [
     author: "Bill",
     image:
       "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
+    mediaKind: "image",
+    mediaSrc: null,
+    hasThumbnail: true,
   },
   {
     id: "browse-kaela-free",
@@ -167,6 +182,9 @@ const browseItems: BrowseItem[] = [
     author: "Bill",
     image:
       "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+    mediaKind: "image",
+    mediaSrc: null,
+    hasThumbnail: true,
   },
   {
     id: "browse-best-content-free",
@@ -177,6 +195,9 @@ const browseItems: BrowseItem[] = [
     author: "Bill",
     image:
       "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+    mediaKind: "image",
+    mediaSrc: null,
+    hasThumbnail: true,
   },
 ];
 
@@ -322,15 +343,27 @@ export default function HomePage() {
       const formatted: BrowseItem[] = data
         .map((asset: any) => {
           const profile = profileLookup.get(asset.owner_id);
-          const imagePath = asset.thumbnail_path || asset.storage_path;
           const title = asset.title || "Untitled";
           const type = asset.content_type || "Image";
+          const normalizedType = String(type).toLowerCase();
           const model = asset.ai_model || "AI Content";
           const price =
             !asset.price_cents || Number(asset.price_cents) === 0
               ? "Free"
               : `$${(Number(asset.price_cents) / 100).toFixed(2)}`;
+          const imagePath =
+            normalizedType === "image"
+              ? asset.storage_path || asset.thumbnail_path
+              : asset.thumbnail_path;
           const image = storageUrl(imagePath);
+          const mediaSrc = storageUrl(asset.storage_path);
+          const mediaKind: BrowseItem["mediaKind"] =
+            normalizedType === "video" ||
+            normalizedType === "audio" ||
+            normalizedType === "text" ||
+            normalizedType === "code"
+              ? normalizedType
+              : "image";
 
           return {
             id: asset.id,
@@ -340,9 +373,11 @@ export default function HomePage() {
             price,
             author: profile?.display_name || "KAIZORA Creator",
             image,
+            mediaKind,
+            mediaSrc,
+            hasThumbnail: !!asset.thumbnail_path,
           };
         })
-        .filter((item) => item.image)
         .slice(0, 6);
 
       setMarketplaceItems(formatted);
@@ -515,7 +550,66 @@ export default function HomePage() {
                 className="overflow-hidden rounded-[26px] border border-[#4f1526] bg-[#0d1018] shadow-[0_8px_28px_rgba(0,0,0,0.18)]"
               >
                 <div className="relative h-[260px] overflow-hidden">
-                  {item.image ? (
+                  {item.mediaKind === "video" &&
+                  !item.hasThumbnail &&
+                  item.mediaSrc ? (
+                    <video
+                      src={item.mediaSrc}
+                      className="h-full w-full object-cover"
+                      controls
+                      playsInline
+                      autoPlay
+                      muted
+                      onCanPlay={(e) => {
+                        (e.target as HTMLVideoElement).pause();
+                      }}
+                    />
+                  ) : item.mediaKind === "audio" ? (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-[#0b0b0b] px-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05]">
+                        <svg
+                          className="h-6 w-6 text-gray-500"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z" />
+                        </svg>
+                      </div>
+                      <span className="line-clamp-1 text-center text-[11px] text-gray-500">
+                        {item.title}
+                      </span>
+                      {item.mediaSrc ? (
+                        <audio
+                          src={item.mediaSrc}
+                          controls
+                          preload="metadata"
+                          className="h-8 w-full"
+                          style={{ colorScheme: "dark" }}
+                        />
+                      ) : null}
+                    </div>
+                  ) : item.mediaKind === "text" || item.mediaKind === "code" ? (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-[#151923] text-white/35">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05]">
+                        <svg
+                          className="h-6 w-6 text-gray-500"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M7.5 8.25h9m-9 3.75h9m-9 3.75h4.5M6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75Z"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-sm uppercase tracking-[0.2em] text-white/25">
+                        {item.mediaKind}
+                      </p>
+                    </div>
+                  ) : item.image ? (
                     <div className="h-full w-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.18))] p-2">
                       <img
                         src={item.image}
@@ -525,7 +619,12 @@ export default function HomePage() {
                     </div>
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-[#151923] text-white/35">
-                      <Sparkles className="h-10 w-10" />
+                      <div className="text-center">
+                        <Sparkles className="mx-auto h-10 w-10" />
+                        <p className="mt-3 text-sm uppercase tracking-[0.2em] text-white/25">
+                          {item.mediaKind}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
