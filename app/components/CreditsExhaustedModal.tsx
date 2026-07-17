@@ -5,9 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Zap, RefreshCw, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { availableBalance } from "@/lib/creditExpiry";
 import { syncSubscriptionCredits } from "@/lib/syncSubscriptionCredits";
 import { handleClientAuthFailure } from "@/lib/clientAuthFailure";
+import { getCreditBuckets } from "@/lib/creditBuckets";
 
 // Don't nag the user on pages where they'd already be topping up / subscribing.
 const HIDE_ON = [
@@ -49,12 +49,14 @@ export default function CreditsExhaustedModal() {
       await syncSubscriptionCredits();
       const { data, error: creditsError } = await supabase
         .from("user_credits")
-        .select("balance, total_purchased, expires_at")
+        .select(
+          "balance, total_purchased, subscription_credits, purchased_credits",
+        )
         .eq("user_id", user.id)
         .maybeSingle();
       if (await handleClientAuthFailure(creditsError)) return;
       if (!active) return;
-      setBalance(availableBalance(data?.balance, data?.expires_at));
+      setBalance(getCreditBuckets(data).totalBalance);
       setEverHadCredits((data?.total_purchased ?? 0) > 0);
     };
     load();

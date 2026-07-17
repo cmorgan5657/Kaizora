@@ -5,11 +5,10 @@ import { createNotification } from "@/lib/notifications";
 import { sendCreditTopUpEmail } from "@/lib/email";
 import { syncAnnualSubscriptionCreditsByUserId } from "@/lib/creditSubscriptionSync";
 import {
-  isCreditsExpired,
-  newCreditExpiry,
   packExpiryDays,
 } from "@/lib/creditExpiry";
 import { getFallbackCreditCost } from "@/lib/creditPricing";
+import { buildCreditUpdate, getCreditBuckets } from "@/lib/creditBuckets";
 
 export type CreditResult =
   | { success: true; remaining: number }
@@ -193,34 +192,26 @@ export async function autoTopUpIfNeeded(
 
     if (paymentIntent.status !== "succeeded") return;
 
-    // 6. Add credits to user's balance — reset rolling expiry to now + 30 days.
+    // 6. Add credits to the permanent purchased bucket.
     const { data: currentCredits } = await supabaseAdmin
       .from("user_credits")
-      .select("balance, total_purchased, expires_at")
+      .select("balance, total_purchased, subscription_credits, purchased_credits")
       .eq("user_id", userId)
       .single();
 
     if (!currentCredits) return;
 
-    const expired = isCreditsExpired(currentCredits.expires_at);
-    const baseBalance = expired ? 0 : currentCredits.balance;
-
-    // A top-up must never SHORTEN an existing (e.g. subscription) expiry.
-    // Keep whichever is later: the current expiry or a fresh window.
-    const rolling = newCreditExpiry(durationDays);
-    const keepExpiry =
-      !expired &&
-      currentCredits.expires_at &&
-      new Date(currentCredits.expires_at).getTime() > new Date(rolling).getTime()
-        ? currentCredits.expires_at
-        : rolling;
+    const buckets = getCreditBuckets(currentCredits);
+    const nextPurchasedCredits = buckets.purchasedCredits + pack.credits;
 
     await supabaseAdmin
       .from("user_credits")
       .update({
-        balance: baseBalance + pack.credits,
+        ...buildCreditUpdate(
+          buckets.subscriptionCredits,
+          nextPurchasedCredits,
+        ),
         total_purchased: (currentCredits.total_purchased || 0) + pack.credits,
-        expires_at: keepExpiry,
       })
       .eq("user_id", userId);
 
@@ -262,7 +253,7 @@ export async function autoTopUpIfNeeded(
           credits: pack.credits,
           amount: pack.price,
           auto: true,
-          newBalance: baseBalance + pack.credits,
+          newBalance: buckets.totalBalance + pack.credits,
           durationDays,
         }).catch(() => {});
       }
@@ -327,13 +318,11 @@ export async function getBalance(userId: string): Promise<number> {
 
   const { data } = await supabaseAdmin
     .from("user_credits")
-    .select("balance, expires_at")
+    .select("balance, subscription_credits, purchased_credits")
     .eq("user_id", userId)
     .single();
 
-  // Expired balances are worth 0.
-  if (isCreditsExpired(data?.expires_at)) return 0;
-  return data?.balance || 0;
+  return getCreditBuckets(data).totalBalance;
 }
 
 /**
@@ -357,7 +346,7 @@ export async function deductCredits(
   // Get current balance
   const { data: credits, error: fetchError } = await supabaseAdmin
     .from("user_credits")
-    .select("balance, total_spent, expires_at")
+    .select("balance, total_spent, subscription_credits, purchased_credits")
     .eq("user_id", userId)
     .single();
 
@@ -370,32 +359,29 @@ export async function deductCredits(
     };
   }
 
-  // Expired credits are worth 0 — block as insufficient.
-  if (isCreditsExpired(credits.expires_at)) {
+  const buckets = getCreditBuckets(credits);
+  if (buckets.totalBalance < cost) {
     return {
       success: false,
-      error: "Your credits have expired. Please top up to continue.",
+      error: `Insufficient credits. This action costs ${cost} credits but you have ${buckets.totalBalance}.`,
       required: cost,
-      balance: 0,
+      balance: buckets.totalBalance,
     };
   }
 
-  if (credits.balance < cost) {
-    return {
-      success: false,
-      error: `Insufficient credits. This action costs ${cost} credits but you have ${credits.balance}.`,
-      required: cost,
-      balance: credits.balance,
-    };
-  }
-
-  // Deduct
-  const newBalance = credits.balance - cost;
+  const subscriptionDebit = Math.min(buckets.subscriptionCredits, cost);
+  const purchasedDebit = cost - subscriptionDebit;
+  const nextSubscriptionCredits = buckets.subscriptionCredits - subscriptionDebit;
+  const nextPurchasedCredits = buckets.purchasedCredits - purchasedDebit;
+  const newBalance = nextSubscriptionCredits + nextPurchasedCredits;
   const newTotalSpent = (credits.total_spent || 0) + cost;
 
   const { error: updateError } = await supabaseAdmin
     .from("user_credits")
-    .update({ balance: newBalance, total_spent: newTotalSpent })
+    .update({
+      ...buildCreditUpdate(nextSubscriptionCredits, nextPurchasedCredits),
+      total_spent: newTotalSpent,
+    })
     .eq("user_id", userId);
 
   if (updateError) {
@@ -462,7 +448,7 @@ export async function forceDeduct(
 
   const { data: credits, error: fetchError } = await supabaseAdmin
     .from("user_credits")
-    .select("balance, total_spent, expires_at")
+    .select("balance, total_spent, subscription_credits, purchased_credits")
     .eq("user_id", userId)
     .single();
 
@@ -470,16 +456,24 @@ export async function forceDeduct(
     return { success: false, error: "No credits found." };
   }
 
-  if (isCreditsExpired(credits.expires_at)) {
-    return { success: false, error: "Your credits have expired." };
+  const buckets = getCreditBuckets(credits);
+  if (buckets.totalBalance < cost) {
+    return { success: false, error: "Insufficient credits." };
   }
 
-  const newBalance = credits.balance - cost;
+  const subscriptionDebit = Math.min(buckets.subscriptionCredits, cost);
+  const purchasedDebit = cost - subscriptionDebit;
+  const nextSubscriptionCredits = buckets.subscriptionCredits - subscriptionDebit;
+  const nextPurchasedCredits = buckets.purchasedCredits - purchasedDebit;
+  const newBalance = nextSubscriptionCredits + nextPurchasedCredits;
   const newTotalSpent = (credits.total_spent || 0) + cost;
 
   const { error: updateError } = await supabaseAdmin
     .from("user_credits")
-    .update({ balance: newBalance, total_spent: newTotalSpent })
+    .update({
+      ...buildCreditUpdate(nextSubscriptionCredits, nextPurchasedCredits),
+      total_spent: newTotalSpent,
+    })
     .eq("user_id", userId);
 
   if (updateError) {

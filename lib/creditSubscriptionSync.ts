@@ -1,4 +1,9 @@
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import {
+  buildCreditUpdate,
+  getCreditBuckets,
+  getPlanMonthlyCredits,
+} from "@/lib/creditBuckets";
 
 type CreditSubscriptionRow = {
   user_id: string;
@@ -9,6 +14,8 @@ type CreditSubscriptionRow = {
   credits_per_cycle: number | null;
   current_period_end: string | null;
   cancel_at_period_end?: boolean | null;
+  pending_plan_id?: string | null;
+  pending_change_effective_date?: string | null;
 };
 
 function addMonths(date: Date, months: number): Date {
@@ -53,7 +60,7 @@ async function loadSubscriptionByUserId(userId: string) {
   const { data } = await supabaseAdmin
     .from("user_credit_subscriptions")
     .select(
-      "user_id, plan_id, stripe_subscription_id, status, billing_interval, credits_per_cycle, current_period_end, cancel_at_period_end",
+      "user_id, plan_id, stripe_subscription_id, status, billing_interval, credits_per_cycle, current_period_end, cancel_at_period_end, pending_plan_id, pending_change_effective_date",
     )
     .eq("user_id", userId)
     .in("status", ["active", "past_due", "trialing", "unpaid", "canceled"])
@@ -104,28 +111,26 @@ async function syncAnnualCreditsForRow(subscription: CreditSubscriptionRow) {
 
   const { data: creditsRow } = await supabaseAdmin
     .from("user_credits")
-    .select("total_purchased, total_spent")
+    .select(
+      "balance, total_purchased, total_spent, subscription_credits, purchased_credits",
+    )
     .eq("user_id", subscription.user_id)
     .maybeSingle();
 
-  const nextExpiry = window.end.toISOString();
+  const buckets = getCreditBuckets(creditsRow);
   if (creditsRow) {
     await supabaseAdmin
       .from("user_credits")
       .update({
-        balance: creditsPerCycle,
-        total_purchased: (creditsRow.total_purchased || 0) + creditsPerCycle,
-        expires_at: nextExpiry,
-        updated_at: new Date().toISOString(),
+        ...buildCreditUpdate(creditsPerCycle, buckets.purchasedCredits),
       })
       .eq("user_id", subscription.user_id);
   } else {
     await supabaseAdmin.from("user_credits").insert({
       user_id: subscription.user_id,
-      balance: creditsPerCycle,
-      total_purchased: creditsPerCycle,
+      ...buildCreditUpdate(creditsPerCycle, 0),
+      total_purchased: 0,
       total_spent: 0,
-      expires_at: nextExpiry,
     });
   }
 
@@ -141,9 +146,56 @@ async function syncAnnualCreditsForRow(subscription: CreditSubscriptionRow) {
   return {
     synced: true,
     reason: "refreshed" as const,
-    expiresAt: nextExpiry,
+    expiresAt: window.end.toISOString(),
     credits: creditsPerCycle,
   };
+}
+
+export async function applyPendingPlanChangeIfDue(
+  subscription: CreditSubscriptionRow,
+  now: Date = new Date(),
+) {
+  if (
+    !subscription.pending_plan_id ||
+    !subscription.pending_change_effective_date
+  ) {
+    return { applied: false, effectivePlanId: subscription.plan_id };
+  }
+
+  const effectiveDate = new Date(subscription.pending_change_effective_date);
+  if (Number.isNaN(effectiveDate.getTime()) || effectiveDate > now) {
+    return { applied: false, effectivePlanId: subscription.plan_id };
+  }
+
+  const nextCredits = getPlanMonthlyCredits(
+    subscription.pending_plan_id,
+    subscription.credits_per_cycle,
+  );
+  const { data: creditsRow } = await supabaseAdmin
+    .from("user_credits")
+    .select("subscription_credits, purchased_credits, balance")
+    .eq("user_id", subscription.user_id)
+    .maybeSingle();
+
+  const buckets = getCreditBuckets(creditsRow);
+
+  await supabaseAdmin
+    .from("user_credits")
+    .update(buildCreditUpdate(nextCredits, buckets.purchasedCredits))
+    .eq("user_id", subscription.user_id);
+
+  await supabaseAdmin
+    .from("user_credit_subscriptions")
+    .update({
+      plan_id: subscription.pending_plan_id,
+      credits_per_cycle: nextCredits,
+      pending_plan_id: null,
+      pending_change_effective_date: null,
+      updated_at: now.toISOString(),
+    })
+    .eq("stripe_subscription_id", subscription.stripe_subscription_id);
+
+  return { applied: true, effectivePlanId: subscription.pending_plan_id };
 }
 
 export async function syncAnnualSubscriptionCreditsByUserId(userId: string) {

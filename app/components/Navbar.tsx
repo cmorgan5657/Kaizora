@@ -11,7 +11,6 @@ import {
   BarChart3,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { availableBalance } from "@/lib/creditExpiry";
 import { clearBetaEmailCookie, setBetaEmailCookie } from "@/lib/betaAccess";
 import { syncSubscriptionCredits } from "@/lib/syncSubscriptionCredits";
 import NotificationBell from "./NotificationBell";
@@ -81,11 +80,20 @@ export default function Navbar() {
 
     const { data } = await supabase
       .from("user_credits")
-      .select("balance, expires_at")
+      .select("balance, subscription_credits, purchased_credits")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    setCreditBalance(availableBalance(data?.balance, data?.expires_at));
+    const subscriptionCredits = Math.max(
+      0,
+      Number((data as any)?.subscription_credits || 0),
+    );
+    const purchasedCredits =
+      (data as any)?.purchased_credits != null
+        ? Math.max(0, Number((data as any)?.purchased_credits || 0))
+        : Math.max(0, Number(data?.balance || 0));
+
+    setCreditBalance(subscriptionCredits + purchasedCredits);
   }
 
   useEffect(() => {

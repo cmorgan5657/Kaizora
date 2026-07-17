@@ -3,7 +3,11 @@ import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { createNotification } from "@/lib/notifications";
 import { sendSubscriptionCancelledEmail } from "@/lib/email";
-import { syncAnnualSubscriptionCreditsForRow } from "@/lib/creditSubscriptionSync";
+import {
+  applyPendingPlanChangeIfDue,
+  syncAnnualSubscriptionCreditsForRow,
+} from "@/lib/creditSubscriptionSync";
+import { buildCreditUpdate } from "@/lib/creditBuckets";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20" as unknown as Stripe.LatestApiVersion,
@@ -64,6 +68,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ subscription: null });
     }
 
+    const pendingResult = await applyPendingPlanChangeIfDue(subscription as any);
+    if (pendingResult.applied) {
+      subscription.plan_id = pendingResult.effectivePlanId;
+      subscription.pending_plan_id = null;
+      subscription.pending_change_effective_date = null;
+    }
+
     await syncAnnualSubscriptionCreditsForRow({
       user_id: subscription.user_id,
       plan_id: subscription.plan_id,
@@ -73,6 +84,9 @@ export async function GET(req: NextRequest) {
       credits_per_cycle: subscription.credits_per_cycle ?? 0,
       current_period_end: subscription.current_period_end,
       cancel_at_period_end: subscription.cancel_at_period_end || false,
+      pending_plan_id: subscription.pending_plan_id || null,
+      pending_change_effective_date:
+        subscription.pending_change_effective_date || null,
     });
 
     const plan = await getPlan(subscription.plan_id);
@@ -91,6 +105,9 @@ export async function GET(req: NextRequest) {
         stripe_subscription_id: subscription.stripe_subscription_id,
         current_period_end: subscription.current_period_end,
         cancel_at_period_end: subscription.cancel_at_period_end || false,
+        pending_plan_id: subscription.pending_plan_id || null,
+        pending_change_effective_date:
+          subscription.pending_change_effective_date || null,
       },
     });
   } catch (error: unknown) {
@@ -142,10 +159,16 @@ export async function POST(req: NextRequest) {
         .update({
           status: "canceled",
           cancel_at_period_end: false,
+          pending_plan_id: null,
+          pending_change_effective_date: null,
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", auth.user.id)
         .eq("stripe_subscription_id", subscriptionId);
+      await supabaseAdmin
+        .from("user_credits")
+        .update(buildCreditUpdate(0, 0))
+        .eq("user_id", auth.user.id);
 
       return NextResponse.json({
         success: true,

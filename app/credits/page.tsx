@@ -15,13 +15,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import {
-  availableBalance,
-  isCreditsExpired,
-  daysUntilExpiry,
-} from "@/lib/creditExpiry";
 import { syncSubscriptionCredits } from "@/lib/syncSubscriptionCredits";
 import LegacyCreditsNotice from "@/app/components/LegacyCreditsNotice";
+import { getCreditBuckets } from "@/lib/creditBuckets";
 
 interface CreditPack {
   id: string;
@@ -58,7 +54,8 @@ function CreditsPageInner() {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState<number | null>(null);
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [subscriptionBalance, setSubscriptionBalance] = useState(0);
+  const [purchasedBalance, setPurchasedBalance] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
   const [totalPurchased, setTotalPurchased] = useState(0);
   const [packs, setPacks] = useState<CreditPack[]>([]);
@@ -240,17 +237,23 @@ function CreditsPageInner() {
 
     const { data } = await supabase
       .from("user_credits")
-      .select("balance, total_spent, total_purchased, expires_at")
+      .select(
+        "balance, total_spent, total_purchased, subscription_credits, purchased_credits",
+      )
       .eq("user_id", userId)
       .maybeSingle();
 
     if (data) {
-      setBalance(availableBalance(data.balance, data.expires_at));
-      setExpiresAt(data.expires_at ?? null);
+      const buckets = getCreditBuckets(data);
+      setBalance(buckets.totalBalance);
+      setSubscriptionBalance(buckets.subscriptionCredits);
+      setPurchasedBalance(buckets.purchasedCredits);
       setTotalSpent(data.total_spent ?? 0);
       setTotalPurchased(data.total_purchased ?? 0);
     } else {
       setBalance(0);
+      setSubscriptionBalance(0);
+      setPurchasedBalance(0);
     }
   };
 
@@ -677,28 +680,25 @@ function CreditsPageInner() {
               {balance?.toLocaleString() ?? "—"}
             </p>
             <p className="text-[8px] md:text-[10px] text-gray-600">credits</p>
-            {expiresAt && (balance ?? 0) > 0 && !isCreditsExpired(expiresAt) && (
-              <p className="text-[8px] md:text-[10px] text-amber-500/80 mt-0.5">
-                Expires in {daysUntilExpiry(expiresAt)}d
-              </p>
-            )}
-            {isCreditsExpired(expiresAt) && (
-              <p className="text-[8px] md:text-[10px] text-red-500/80 mt-0.5">
-                Expired
-              </p>
-            )}
+            <p className="text-[8px] md:text-[10px] text-gray-500 mt-0.5">
+              Sub {subscriptionBalance.toLocaleString()} · Top-up{" "}
+              {purchasedBalance.toLocaleString()}
+            </p>
           </div>
           <div className="border border-white/10 p-3 md:p-4">
             <div className="flex items-center gap-1 mb-0.5">
               <TrendingUp className="h-2.5 w-2.5 text-gray-500" />
               <p className="text-[9px] md:text-[11px] text-gray-500">
-                Purchased
+                Purchased Balance
               </p>
             </div>
             <p className="text-lg md:text-2xl font-bold">
-              {totalPurchased.toLocaleString()}
+              {purchasedBalance.toLocaleString()}
             </p>
             <p className="text-[8px] md:text-[10px] text-gray-600">credits</p>
+            <p className="text-[8px] md:text-[10px] text-gray-500 mt-0.5">
+              Lifetime bought: {totalPurchased.toLocaleString()}
+            </p>
           </div>
           <div className="border border-white/10 p-3 md:p-4">
             <div className="flex items-center gap-1 mb-0.5">

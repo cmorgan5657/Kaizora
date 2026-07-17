@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getPlanMonthlyCredits } from "@/lib/creditBuckets";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20" as unknown as Stripe.LatestApiVersion,
@@ -39,7 +40,9 @@ export async function POST(req: NextRequest) {
 
     const { data: existing } = await supabaseAdmin
       .from("user_credit_subscriptions")
-      .select("stripe_subscription_id, plan_id")
+      .select(
+        "stripe_subscription_id, plan_id, current_period_end, credits_per_cycle",
+      )
       .eq("user_id", auth.user.id)
       .eq("stripe_subscription_id", subscriptionId)
       .maybeSingle();
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     const { data: plan } = await supabaseAdmin
       .from("credit_plans")
-      .select("id, name, stripe_price_id, active")
+      .select("id, name, stripe_price_id, active, credits")
       .eq("id", planId)
       .maybeSingle();
 
@@ -99,6 +102,41 @@ export async function POST(req: NextRequest) {
     const protocol = req.headers.get("x-forwarded-proto") || "http";
     const host = req.headers.get("host");
     const baseUrl = `${protocol}://${host}`;
+    const currentPlanCredits = getPlanMonthlyCredits(
+      existing.plan_id,
+      existing.credits_per_cycle,
+    );
+    const nextPlanCredits = getPlanMonthlyCredits(plan.id, plan.credits);
+
+    if (nextPlanCredits <= currentPlanCredits) {
+      await stripe.subscriptions.update(subscriptionId, {
+        items: [
+          {
+            id: subscriptionItem.id,
+            price: plan.stripe_price_id,
+            quantity: subscriptionItem.quantity ?? 1,
+          },
+        ],
+        proration_behavior: "none",
+      });
+
+      await supabaseAdmin
+        .from("user_credit_subscriptions")
+        .update({
+          pending_plan_id: plan.id,
+          pending_change_effective_date: existing.current_period_end,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", auth.user.id)
+        .eq("stripe_subscription_id", subscriptionId);
+
+      return NextResponse.json({
+        success: true,
+        deferred: true,
+        effectiveDate: existing.current_period_end,
+        message: "Downgrade scheduled for the next billing cycle.",
+      });
+    }
 
     const session = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,

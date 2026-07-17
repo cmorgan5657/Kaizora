@@ -1,9 +1,7 @@
 // supabase/functions/fulfill-credits/index.ts
 //
 // Fulfills a Stripe credit-pack purchase when the user returns to /credits.
-// Mirrors the Stripe webhook: sets the rolling 30-day expiry, logs a
-// transaction, and is idempotent so it never double-credits alongside the
-// webhook.
+// Mirrors the Stripe webhook and credits the permanent purchased bucket.
 //
 // Deploy:  supabase functions deploy fulfill-credits
 // Secrets: STRIPE_SECRET_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -22,12 +20,40 @@ const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
-// Single rolling expiry, 30 days flat — must match lib/creditExpiry.ts.
-const CREDIT_EXPIRY_DAYS = 30;
-const newCreditExpiry = () =>
-  new Date(Date.now() + CREDIT_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
-const isCreditsExpired = (expiresAt: string | null | undefined) =>
-  !!expiresAt && new Date(expiresAt).getTime() < Date.now();
+const getBuckets = (row: {
+  subscription_credits?: number | null;
+  purchased_credits?: number | null;
+  balance?: number | null;
+} | null | undefined) => {
+  if (!row) {
+    return { subscriptionCredits: 0, purchasedCredits: 0, totalBalance: 0 };
+  }
+
+  const hasExplicitBuckets =
+    row.subscription_credits != null || row.purchased_credits != null;
+  const subscriptionCredits = hasExplicitBuckets
+    ? Math.max(0, Number(row.subscription_credits || 0))
+    : 0;
+  const purchasedCredits = hasExplicitBuckets
+    ? Math.max(0, Number(row.purchased_credits || 0))
+    : Math.max(0, Number(row.balance || 0));
+
+  return {
+    subscriptionCredits,
+    purchasedCredits,
+    totalBalance: subscriptionCredits + purchasedCredits,
+  };
+};
+
+const buildCreditUpdate = (
+  subscriptionCredits: number,
+  purchasedCredits: number,
+) => ({
+  subscription_credits: Math.max(0, subscriptionCredits),
+  purchased_credits: Math.max(0, purchasedCredits),
+  balance: Math.max(0, subscriptionCredits) + Math.max(0, purchasedCredits),
+  updated_at: new Date().toISOString(),
+});
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,49 +99,49 @@ serve(async (req) => {
     if (already) {
       const { data: current } = await supabaseAdmin
         .from("user_credits")
-        .select("balance, expires_at")
+        .select("balance, subscription_credits, purchased_credits")
         .eq("user_id", userId)
         .maybeSingle();
+      const buckets = getBuckets(current);
       return json({
         success: true,
         alreadyFulfilled: true,
-        balance: isCreditsExpired(current?.expires_at)
-          ? 0
-          : current?.balance ?? 0,
+        balance: buckets.totalBalance,
       });
     }
 
-    // 3. Upsert balance with rolling expiry (reset if the old balance expired).
+    // 3. Upsert balance into the permanent purchased bucket.
     const { data: existing } = await supabaseAdmin
       .from("user_credits")
-      .select("balance, total_purchased, expires_at")
+      .select(
+        "balance, total_purchased, subscription_credits, purchased_credits",
+      )
       .eq("user_id", userId)
       .maybeSingle();
 
     let newBalance: number;
 
     if (existing) {
-      const base = isCreditsExpired(existing.expires_at)
-        ? 0
-        : existing.balance || 0;
-      newBalance = base + credits;
+      const buckets = getBuckets(existing);
+      const nextPurchasedCredits = buckets.purchasedCredits + credits;
+      newBalance = buckets.subscriptionCredits + nextPurchasedCredits;
       await supabaseAdmin
         .from("user_credits")
         .update({
-          balance: newBalance,
+          ...buildCreditUpdate(
+            buckets.subscriptionCredits,
+            nextPurchasedCredits,
+          ),
           total_purchased: (existing.total_purchased || 0) + credits,
-          expires_at: newCreditExpiry(),
-          updated_at: new Date().toISOString(),
         })
         .eq("user_id", userId);
     } else {
       newBalance = credits;
       await supabaseAdmin.from("user_credits").insert({
         user_id: userId,
-        balance: credits,
+        ...buildCreditUpdate(0, credits),
         total_purchased: credits,
         total_spent: 0,
-        expires_at: newCreditExpiry(),
       });
     }
 

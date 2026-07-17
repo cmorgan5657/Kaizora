@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { availableBalance } from "@/lib/creditExpiry";
 import { getFallbackCreditCost } from "@/lib/creditPricing";
 import { syncSubscriptionCredits } from "@/lib/syncSubscriptionCredits";
+import { getCreditBuckets } from "@/lib/creditBuckets";
 
 /**
  * Live credit balance for the logged-in user.
@@ -29,11 +29,10 @@ export function useCreditBalance(): number | null {
       await syncSubscriptionCredits();
       const { data } = await supabase
         .from("user_credits")
-        .select("balance, expires_at")
+        .select("balance, subscription_credits, purchased_credits")
         .eq("user_id", user.id)
         .maybeSingle();
-      // Expired credits read as 0 — keeps badge/gate/disabled buttons in sync.
-      if (active) setBalance(availableBalance(data?.balance, data?.expires_at));
+      if (active) setBalance(getCreditBuckets(data).totalBalance);
     };
 
     load();

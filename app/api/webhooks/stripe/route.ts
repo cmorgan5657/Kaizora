@@ -3,7 +3,6 @@ import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { fulfillAssetPurchase } from "@/lib/fulfillPurchase";
 import { createNotification } from "@/lib/notifications";
-import { newCreditExpiry, isCreditsExpired } from "@/lib/creditExpiry";
 import {
   sendCreditTopUpEmail,
   sendSubscriptionEmail,
@@ -12,7 +11,13 @@ import {
 } from "@/lib/email";
 import {
   syncAnnualSubscriptionCreditsForRow,
+  applyPendingPlanChangeIfDue,
 } from "@/lib/creditSubscriptionSync";
+import {
+  buildCreditUpdate,
+  getCreditBuckets,
+  getPlanMonthlyCredits,
+} from "@/lib/creditBuckets";
 
 // Look up a user's email + display name for notification emails.
 async function getUserContact(
@@ -135,16 +140,30 @@ async function upsertCreditSubscription(subscription: any) {
   let planId = metadata.plan_id;
   const stripePriceId = subscription.items?.data?.[0]?.price?.id;
   const planFromPrice = await getCreditPlanByStripePriceId(stripePriceId);
+  let existingSubscription: {
+    user_id?: string | null;
+    plan_id?: string | null;
+    pending_plan_id?: string | null;
+    pending_change_effective_date?: string | null;
+  } | null = null;
 
   if (!userId || !planId) {
     const { data: existing } = await supabaseAdmin
       .from("user_credit_subscriptions")
-      .select("user_id, plan_id")
+      .select("user_id, plan_id, pending_plan_id, pending_change_effective_date")
       .eq("stripe_subscription_id", subscription.id)
       .maybeSingle();
 
+    existingSubscription = existing;
     userId = userId || existing?.user_id;
     planId = planId || existing?.plan_id;
+  } else {
+    const { data: existing } = await supabaseAdmin
+      .from("user_credit_subscriptions")
+      .select("user_id, plan_id, pending_plan_id, pending_change_effective_date")
+      .eq("stripe_subscription_id", subscription.id)
+      .maybeSingle();
+    existingSubscription = existing;
   }
 
   if (!userId && subscription.customer) {
@@ -174,13 +193,25 @@ async function upsertCreditSubscription(subscription: any) {
     "month";
   const creditsPerCycle = Number(metadata.credits) || planFromPrice?.credits || 0;
   const periodEnd = getSubscriptionPeriodEnd(subscription);
+  const pendingEffectiveDate = existingSubscription?.pending_change_effective_date
+    ? new Date(existingSubscription.pending_change_effective_date)
+    : null;
+  const pendingDowngradeStillDeferred =
+    existingSubscription?.pending_plan_id &&
+    pendingEffectiveDate &&
+    !Number.isNaN(pendingEffectiveDate.getTime()) &&
+    pendingEffectiveDate.getTime() > Date.now() &&
+    planId === existingSubscription.pending_plan_id;
+  const effectivePlanId = pendingDowngradeStillDeferred
+    ? existingSubscription?.plan_id || planId
+    : planId;
 
   console.log("[stripe webhook] upsert credit subscription", {
     subscriptionId: subscription.id,
     customerId: subscription.customer,
     stripePriceId,
     userId,
-    planId,
+    planId: effectivePlanId,
     billingInterval,
     creditsPerCycle,
     periodEnd,
@@ -190,7 +221,7 @@ async function upsertCreditSubscription(subscription: any) {
   await supabaseAdmin.from("user_credit_subscriptions").upsert(
     {
       user_id: userId,
-      plan_id: planId,
+      plan_id: effectivePlanId,
       stripe_subscription_id: subscription.id,
       stripe_customer_id: subscription.customer || null,
       status: subscription.status || "active",
@@ -198,18 +229,112 @@ async function upsertCreditSubscription(subscription: any) {
       credits_per_cycle: creditsPerCycle,
       current_period_end: periodEnd,
       cancel_at_period_end: subscription.cancel_at_period_end || false,
+      pending_plan_id: pendingDowngradeStillDeferred
+        ? existingSubscription?.pending_plan_id || null
+        : null,
+      pending_change_effective_date: pendingDowngradeStillDeferred
+        ? existingSubscription?.pending_change_effective_date || null
+        : null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "stripe_subscription_id" },
   );
 
-  return { userId, planId, billingInterval, creditsPerCycle };
+  return {
+    userId,
+    planId: effectivePlanId,
+    billingInterval,
+    creditsPerCycle,
+    previousPlanId: existingSubscription?.plan_id || null,
+    currentPeriodEnd: periodEnd,
+  };
+}
+
+async function grantImmediateUpgradeCredits(params: {
+  userId: string;
+  subscriptionId: string;
+  previousPlanId: string | null;
+  nextPlanId: string;
+  nextPlanCredits: number;
+  currentPeriodEnd: string | null;
+}) {
+  const previousPlanCredits = getPlanMonthlyCredits(params.previousPlanId);
+  const nextPlanCredits = getPlanMonthlyCredits(
+    params.nextPlanId,
+    params.nextPlanCredits,
+  );
+
+  if (
+    !params.previousPlanId ||
+    previousPlanCredits <= 0 ||
+    nextPlanCredits <= previousPlanCredits
+  ) {
+    return { granted: false, reason: "not_upgrade" as const };
+  }
+
+  const marker = `subupgrade:${params.subscriptionId}:${params.nextPlanId}:${params.currentPeriodEnd || "none"}`;
+  const { data: existingTx } = await supabaseAdmin
+    .from("credit_transactions")
+    .select("id")
+    .eq("stripe_session_id", marker)
+    .maybeSingle();
+
+  if (existingTx) {
+    return { granted: false, reason: "already_granted" as const };
+  }
+
+  const { data: creditsRow } = await supabaseAdmin
+    .from("user_credits")
+    .select("subscription_credits, purchased_credits, balance")
+    .eq("user_id", params.userId)
+    .maybeSingle();
+
+  const buckets = getCreditBuckets(creditsRow);
+  const nextSubscriptionCredits = buckets.subscriptionCredits + nextPlanCredits;
+
+  if (creditsRow) {
+    await supabaseAdmin
+      .from("user_credits")
+      .update(
+        buildCreditUpdate(nextSubscriptionCredits, buckets.purchasedCredits),
+      )
+      .eq("user_id", params.userId);
+  } else {
+    await supabaseAdmin.from("user_credits").insert({
+      user_id: params.userId,
+      ...buildCreditUpdate(nextSubscriptionCredits, 0),
+      total_purchased: 0,
+      total_spent: 0,
+    });
+  }
+
+  await supabaseAdmin.from("credit_transactions").insert({
+    user_id: params.userId,
+    amount: nextPlanCredits,
+    type: "purchase",
+    action: "subscription_upgrade",
+    description: `Upgraded from ${params.previousPlanId} to ${params.nextPlanId}`,
+    stripe_session_id: marker,
+  });
+
+  return {
+    granted: true,
+    reason: "upgrade_applied" as const,
+    newSubscriptionCredits: nextSubscriptionCredits,
+  };
 }
 
 async function grantCreditsForSubscriptionInvoice(invoice: any, subscription: any) {
-  const { userId, planId, billingInterval, creditsPerCycle } =
+  const {
+    userId,
+    planId,
+    billingInterval,
+    creditsPerCycle,
+    previousPlanId,
+  } =
     await upsertCreditSubscription(subscription);
   const periodEnd = getSubscriptionPeriodEnd(subscription);
+  const billingReason = invoice.billing_reason;
 
   console.log("[stripe webhook] grant subscription credits start", {
     invoiceId: invoice.id,
@@ -226,6 +351,31 @@ async function grantCreditsForSubscriptionInvoice(invoice: any, subscription: an
     throw new Error(
       `Credit subscription ${subscription.id} missing period end or credits`,
     );
+  }
+
+  if (billingReason === "subscription_update") {
+    await grantImmediateUpgradeCredits({
+      userId,
+      subscriptionId: subscription.id,
+      previousPlanId,
+      nextPlanId: planId,
+      nextPlanCredits: creditsPerCycle,
+      currentPeriodEnd: periodEnd,
+    });
+
+    return { userId, planId, credits: creditsPerCycle, alreadyGranted: false };
+  }
+
+  const { data: refreshedRow } = await supabaseAdmin
+    .from("user_credit_subscriptions")
+    .select(
+      "user_id, plan_id, stripe_subscription_id, status, billing_interval, credits_per_cycle, current_period_end, cancel_at_period_end, pending_plan_id, pending_change_effective_date",
+    )
+    .eq("stripe_subscription_id", subscription.id)
+    .maybeSingle();
+
+  if (refreshedRow) {
+    await applyPendingPlanChangeIfDue(refreshedRow as any);
   }
 
   if (billingInterval === "year") {
@@ -304,27 +454,24 @@ async function grantCreditsForSubscriptionInvoice(invoice: any, subscription: an
 
   const { data: existingCredits } = await supabaseAdmin
     .from("user_credits")
-    .select("total_purchased")
+    .select("balance, total_purchased, subscription_credits, purchased_credits")
     .eq("user_id", userId)
     .maybeSingle();
 
+  const buckets = getCreditBuckets(existingCredits);
   if (existingCredits) {
     await supabaseAdmin
       .from("user_credits")
       .update({
-        balance: creditsPerCycle,
-        total_purchased: (existingCredits.total_purchased || 0) + creditsPerCycle,
-        expires_at: periodEnd,
-        updated_at: new Date().toISOString(),
+        ...buildCreditUpdate(creditsPerCycle, buckets.purchasedCredits),
       })
       .eq("user_id", userId);
   } else {
     await supabaseAdmin.from("user_credits").insert({
       user_id: userId,
-      balance: creditsPerCycle,
-      total_purchased: creditsPerCycle,
+      ...buildCreditUpdate(creditsPerCycle, 0),
+      total_purchased: 0,
       total_spent: 0,
-      expires_at: periodEnd,
     });
   }
 
@@ -447,45 +594,34 @@ export async function POST(req: NextRequest) {
           const userId = session.metadata.user_id;
           const credits = parseInt(session.metadata.credits, 10);
           const packId = session.metadata.pack_id;
-          // Monthly packs → 30-day credits, annual packs → 365-day credits.
-          const durationDays =
-            parseInt(session.metadata.duration_days, 10) || 30;
 
           if (userId && credits > 0) {
             const { data: existing } = await supabaseAdmin
               .from("user_credits")
-              .select("balance, total_purchased, expires_at")
+              .select(
+                "balance, total_purchased, subscription_credits, purchased_credits",
+              )
               .eq("user_id", userId)
               .maybeSingle();
 
             if (existing) {
-              const expired = isCreditsExpired(existing.expires_at);
-              const baseBalance = expired ? 0 : existing.balance || 0;
-              // A top-up must never SHORTEN an existing (subscription) expiry.
-              const rolling = newCreditExpiry(durationDays);
-              const keepExpiry =
-                !expired &&
-                existing.expires_at &&
-                new Date(existing.expires_at).getTime() >
-                  new Date(rolling).getTime()
-                  ? existing.expires_at
-                  : rolling;
+              const buckets = getCreditBuckets(existing);
               await supabaseAdmin
                 .from("user_credits")
                 .update({
-                  balance: baseBalance + credits,
+                  ...buildCreditUpdate(
+                    buckets.subscriptionCredits,
+                    buckets.purchasedCredits + credits,
+                  ),
                   total_purchased: (existing.total_purchased || 0) + credits,
-                  expires_at: keepExpiry,
-                  updated_at: new Date().toISOString(),
                 })
                 .eq("user_id", userId);
             } else {
               await supabaseAdmin.from("user_credits").insert({
                 user_id: userId,
-                balance: credits,
+                ...buildCreditUpdate(0, credits),
                 total_purchased: credits,
                 total_spent: 0,
-                expires_at: newCreditExpiry(durationDays),
               });
             }
 
@@ -521,7 +657,7 @@ export async function POST(req: NextRequest) {
                 credits,
                 amount: (session.amount_total || 0) / 100,
                 auto: false,
-                durationDays,
+                durationDays: parseInt(session.metadata.duration_days, 10) || 30,
               }).catch(() => {});
             }
 
@@ -600,6 +736,14 @@ export async function POST(req: NextRequest) {
 
         if (await isCreditSubscriptionObject(subscription)) {
           const info = await upsertCreditSubscription(subscription);
+          await grantImmediateUpgradeCredits({
+            userId: info.userId,
+            subscriptionId: subscription.id,
+            previousPlanId: info.previousPlanId,
+            nextPlanId: info.planId,
+            nextPlanCredits: info.creditsPerCycle,
+            currentPeriodEnd: info.currentPeriodEnd || null,
+          });
 
           await logWebhookEvent(eventType, eventId, "success", {
             userId: info.userId,
@@ -644,9 +788,18 @@ export async function POST(req: NextRequest) {
             .update({
               status: "canceled",
               cancel_at_period_end: false,
+              pending_plan_id: null,
+              pending_change_effective_date: null,
               updated_at: new Date().toISOString(),
             })
             .eq("stripe_subscription_id", subscription.id);
+
+          if (subRow?.user_id) {
+            await supabaseAdmin
+              .from("user_credits")
+              .update(buildCreditUpdate(0, 0))
+              .eq("user_id", subRow.user_id);
+          }
 
           if (subRow?.user_id) {
             const { data: planRow } = await supabaseAdmin

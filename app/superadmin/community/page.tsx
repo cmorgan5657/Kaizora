@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { isCreditsExpired, newCreditExpiry } from "@/lib/creditExpiry";
 import AdminPagination from "@/app/components/AdminPagination";
 import { usePagination } from "@/app/hooks/usePagination";
 import {
@@ -1019,30 +1018,36 @@ function ParticipantsModal({
       if (credits > 0) {
         const { data: existing } = await supabase
           .from("user_credits")
-          .select("balance, expires_at")
+          .select("balance, subscription_credits, purchased_credits")
           .eq("user_id", e.post.user_id)
           .maybeSingle();
 
         if (existing) {
-          // Awarding credits resets the rolling 30-day expiry (reset if expired).
-          const base = isCreditsExpired(existing.expires_at)
-            ? 0
-            : existing.balance || 0;
+          const subscriptionCredits = Math.max(
+            0,
+            Number((existing as any).subscription_credits || 0),
+          );
+          const purchasedCredits =
+            (existing as any).purchased_credits != null
+              ? Math.max(0, Number((existing as any).purchased_credits || 0))
+              : Math.max(0, Number(existing.balance || 0));
           await supabase
             .from("user_credits")
             .update({
-              balance: base + credits,
-              expires_at: newCreditExpiry(),
+              subscription_credits: subscriptionCredits,
+              purchased_credits: purchasedCredits + credits,
+              balance: subscriptionCredits + purchasedCredits + credits,
               updated_at: new Date().toISOString(),
             })
             .eq("user_id", e.post.user_id);
         } else {
           await supabase.from("user_credits").insert({
             user_id: e.post.user_id,
+            subscription_credits: 0,
+            purchased_credits: credits,
             balance: credits,
             total_purchased: 0,
             total_spent: 0,
-            expires_at: newCreditExpiry(),
           });
         }
 

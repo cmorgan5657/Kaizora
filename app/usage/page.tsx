@@ -21,13 +21,9 @@ import {
   Activity,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import {
-  availableBalance,
-  isCreditsExpired,
-  daysUntilExpiry,
-} from "@/lib/creditExpiry";
 import { syncSubscriptionCredits } from "@/lib/syncSubscriptionCredits";
 import LegacyCreditsNotice from "@/app/components/LegacyCreditsNotice";
+import { getCreditBuckets } from "@/lib/creditBuckets";
 
 type Transaction = {
   id: string;
@@ -102,7 +98,8 @@ export default function UsagePage() {
 
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState<number>(0);
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [subscriptionBalance, setSubscriptionBalance] = useState(0);
+  const [purchasedBalance, setPurchasedBalance] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
   const [totalPurchased, setTotalPurchased] = useState(0);
 
@@ -129,13 +126,17 @@ export default function UsagePage() {
 
     const { data } = await supabase
       .from("user_credits")
-      .select("balance, total_spent, total_purchased, expires_at")
+      .select(
+        "balance, total_spent, total_purchased, subscription_credits, purchased_credits",
+      )
       .eq("user_id", userId)
       .maybeSingle();
 
     if (data) {
-      setBalance(availableBalance(data.balance, data.expires_at));
-      setExpiresAt(data.expires_at ?? null);
+      const buckets = getCreditBuckets(data);
+      setBalance(buckets.totalBalance);
+      setSubscriptionBalance(buckets.subscriptionCredits);
+      setPurchasedBalance(buckets.purchasedCredits);
       setTotalSpent(data.total_spent ?? 0);
       setTotalPurchased(data.total_purchased ?? 0);
     }
@@ -366,17 +367,10 @@ export default function UsagePage() {
               {balance.toLocaleString()}
             </p>
             <p className="text-[8px] md:text-[10px] text-gray-600">credits</p>
-            {expiresAt && balance > 0 && !isCreditsExpired(expiresAt) && (
-              <p className="text-[8px] md:text-[10px] text-amber-500/80 mt-0.5">
-                Expires in {daysUntilExpiry(expiresAt)}d (
-                {new Date(expiresAt).toLocaleDateString()})
-              </p>
-            )}
-            {isCreditsExpired(expiresAt) && (
-              <p className="text-[8px] md:text-[10px] text-red-500/80 mt-0.5">
-                Expired
-              </p>
-            )}
+            <p className="text-[8px] md:text-[10px] text-gray-500 mt-0.5">
+              Sub {subscriptionBalance.toLocaleString()} · Top-up{" "}
+              {purchasedBalance.toLocaleString()}
+            </p>
           </div>
           <div className="border border-white/10 p-2.5 md:p-3.5">
             <div className="flex items-center gap-1 mb-0.5">
@@ -384,9 +378,12 @@ export default function UsagePage() {
               <p className="text-[9px] md:text-[11px] text-gray-500">Purchased</p>
             </div>
             <p className="text-lg md:text-2xl font-bold">
-              {totalPurchased.toLocaleString()}
+              {purchasedBalance.toLocaleString()}
             </p>
-            <p className="text-[8px] md:text-[10px] text-gray-600">total</p>
+            <p className="text-[8px] md:text-[10px] text-gray-600">available</p>
+            <p className="text-[8px] md:text-[10px] text-gray-500 mt-0.5">
+              Lifetime bought: {totalPurchased.toLocaleString()}
+            </p>
           </div>
           <div className="border border-white/10 p-2.5 md:p-3.5">
             <div className="flex items-center gap-1 mb-0.5">
