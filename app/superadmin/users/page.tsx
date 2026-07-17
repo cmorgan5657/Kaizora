@@ -98,6 +98,10 @@ export default function SuperAdminUsersPage() {
 
   async function loadProfiles() {
     try {
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
@@ -129,7 +133,9 @@ export default function SuperAdminUsersPage() {
       });
 
       const enriched = (profilesData || [])
-        .filter((p) => p.role !== "superadmin")
+        .filter(
+          (p) => p.role !== "superadmin" && p.id !== currentUser?.id,
+        )
         .map((p) => ({
           ...p,
           credit_balance: creditsMap[p.id] ?? 0,
