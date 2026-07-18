@@ -31,26 +31,12 @@ export default function SecurityGuard() {
       }
     };
 
-    // DevTools open detection via window size difference
-    const detectDevTools = () => {
-      const threshold = 160;
-      if (
-        window.outerWidth - window.innerWidth > threshold ||
-        window.outerHeight - window.innerHeight > threshold
-      ) {
-        document.body.innerHTML = "";
-      }
-    };
-
     document.addEventListener("contextmenu", blockContextMenu);
     document.addEventListener("keydown", blockShortcuts);
-
-    const devToolsInterval = setInterval(detectDevTools, 1000);
 
     return () => {
       document.removeEventListener("contextmenu", blockContextMenu);
       document.removeEventListener("keydown", blockShortcuts);
-      clearInterval(devToolsInterval);
     };
   }, []);
 
