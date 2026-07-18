@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SubscriptionPlans from "./SubscriptionPlans";
+import { TopUpPackSection } from "./TopUpPackSection";
 import {
   CircleNotch,
   PencilSimple,
@@ -117,20 +118,14 @@ export default function SuperAdminPricingPage() {
     sort_order: 0,
   });
 
-  useEffect(() => {
-    fetchData();
-    fetchDiscounts();
-    fetchFaqs();
-  }, []);
-
-  const fetchData = async () => {
+  async function fetchData() {
     setLoading(true);
     const res = await fetch("/api/admin/pricing");
     const data = await res.json();
     setPacks(data.packs || []);
     setCosts(data.costs || []);
     setLoading(false);
-  };
+  }
 
   // ─── Pack CRUD ───
 
@@ -269,17 +264,25 @@ export default function SuperAdminPricingPage() {
 
   // ─── Discounts CRUD (Stripe-backed) ───
 
-  const fetchDiscounts = async () => {
+  async function fetchDiscounts() {
     const res = await fetch("/api/admin/discounts");
     const data = await res.json();
     setDiscounts(data.discounts || []);
-  };
+  }
 
-  const fetchFaqs = async () => {
+  async function fetchFaqs() {
     const res = await fetch("/api/admin/pricing-faqs");
     const data = await res.json();
     setFaqs(data.faqs || []);
-  };
+  }
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await Promise.all([fetchData(), fetchDiscounts(), fetchFaqs()]);
+    };
+
+    void loadInitialData();
+  }, []);
 
   const createDiscount = async () => {
     if (!newDiscount.code.trim() || !newDiscount.value) return;
@@ -427,8 +430,9 @@ export default function SuperAdminPricingPage() {
     <div className="max-w-7xl">
       <h1 className="text-xl font-bold mb-1">Pricing Management</h1>
       <p className="text-sm text-gray-500 mb-8">
-        Manage subscription plans, discount codes, and action costs. Changes
-        reflect on the public pricing page instantly.
+        Manage subscription plans, credit packs, discount codes, and action
+        costs. Changes reflect on the public pricing and credits pages
+        instantly.
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[2.5fr_1fr] gap-x-8 gap-y-10 items-start">
@@ -440,6 +444,25 @@ export default function SuperAdminPricingPage() {
       {/* ─── Annual Plans ─── */}
       <div className="lg:col-start-1 min-w-0">
         <SubscriptionPlans interval="year" />
+      </div>
+
+      <div className="lg:col-start-1 min-w-0">
+        <div className="mb-4">
+          <div className="flex items-center gap-2">
+            <Lightning size={18} className="text-red-500" weight="duotone" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider">
+              Credit Pack Management
+            </h2>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            These one-time packs are what subscribed users see on{" "}
+            <span className="text-gray-300">/credits</span>.
+          </p>
+        </div>
+        <div className="space-y-6">
+          <TopUpPackSection tier="month" />
+          <TopUpPackSection tier="year" />
+        </div>
       </div>
 
       {/* ─── Credit Packs (retired — replaced by subscription plans) ─── */}
