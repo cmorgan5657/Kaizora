@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { getFallbackCreditCost } from "@/lib/creditPricing";
 import { syncSubscriptionCredits } from "@/lib/syncSubscriptionCredits";
 import { getCreditBuckets } from "@/lib/creditBuckets";
+import { isSuperadminEmail, isSuperadminRole } from "@/lib/superadmin";
 
 /**
  * Live credit balance for the logged-in user.
@@ -26,6 +27,18 @@ export function useCreditBalance(): number | null {
         if (active) setBalance(null);
         return;
       }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (isSuperadminRole(profile?.role) || isSuperadminEmail(user.email)) {
+        if (active) setBalance(null);
+        return;
+      }
+
       await syncSubscriptionCredits();
       const { data } = await supabase
         .from("user_credits")

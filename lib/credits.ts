@@ -4,6 +4,7 @@ import nodemailer from "nodemailer";
 import { createNotification } from "@/lib/notifications";
 import { sendCreditTopUpEmail } from "@/lib/email";
 import { syncAnnualSubscriptionCreditsByUserId } from "@/lib/creditSubscriptionSync";
+import { isSuperadminUserId } from "@/lib/superadminServer";
 import {
   packExpiryDays,
 } from "@/lib/creditExpiry";
@@ -314,6 +315,10 @@ export async function getActionCost(action: string): Promise<number> {
  * Get user's current credit balance.
  */
 export async function getBalance(userId: string): Promise<number> {
+  if (await isSuperadminUserId(userId)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
   await syncAnnualSubscriptionCreditsByUserId(userId);
 
   const { data } = await supabaseAdmin
@@ -334,6 +339,10 @@ export async function deductCredits(
   action: string,
   description?: string
 ): Promise<CreditResult> {
+  if (await isSuperadminUserId(userId)) {
+    return { success: true, remaining: Number.POSITIVE_INFINITY };
+  }
+
   await syncAnnualSubscriptionCreditsByUserId(userId);
 
   const cost = await getActionCost(action);
@@ -421,6 +430,10 @@ export async function canAfford(
 ): Promise<{ affordable: boolean; cost: number; balance: number }> {
   const cost = await getActionCost(action);
 
+  if (await isSuperadminUserId(userId)) {
+    return { affordable: true, cost, balance: Number.POSITIVE_INFINITY };
+  }
+
   if (cost === 0) {
     return { affordable: true, cost: 0, balance: await getBalance(userId) };
   }
@@ -440,6 +453,10 @@ export async function forceDeduct(
   action: string,
   description?: string
 ): Promise<CreditResult> {
+  if (await isSuperadminUserId(userId)) {
+    return { success: true, remaining: Number.POSITIVE_INFINITY };
+  }
+
   await syncAnnualSubscriptionCreditsByUserId(userId);
 
   if (cost === 0) {

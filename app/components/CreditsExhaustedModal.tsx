@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { syncSubscriptionCredits } from "@/lib/syncSubscriptionCredits";
 import { handleClientAuthFailure } from "@/lib/clientAuthFailure";
 import { getCreditBuckets } from "@/lib/creditBuckets";
+import { isSuperadminEmail, isSuperadminRole } from "@/lib/superadmin";
 
 // Don't nag the user on pages where they'd already be topping up / subscribing.
 const HIDE_ON = [
@@ -40,6 +41,18 @@ export default function CreditsExhaustedModal() {
       } = await supabase.auth.getUser();
       if (await handleClientAuthFailure(authError)) return;
       if (!user) {
+        if (active) {
+          setBalance(null);
+          setEverHadCredits(false);
+        }
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (isSuperadminRole(profile?.role) || isSuperadminEmail(user.email)) {
         if (active) {
           setBalance(null);
           setEverHadCredits(false);
