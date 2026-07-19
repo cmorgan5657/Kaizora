@@ -3,6 +3,10 @@ node_modules/
 package-lock.json
 pnpm-lock.yaml.next/
 .env
+.env.*
+!.env.example
+!.env.staging.example
+!.env.production.example
 vertex-api-file.json
 gen-lang-client-*.json
 vertex.json

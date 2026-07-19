@@ -9,8 +9,6 @@ const supabase = createClient(
 );
 
 export async function POST(req: Request) {
-  console.log("🔑 Full secret key:", process.env.STRIPE_SECRET_KEY);
-
   try {
     const secretKey = process.env.STRIPE_SECRET_KEY;
 
@@ -23,7 +21,7 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("Secret Key loaded:", secretKey.substring(0, 20) + "...");
+    console.log("Secret Key loaded:", secretKey.substring(0, 8) + "...");
 
     const stripe = new Stripe(secretKey, {
       apiVersion: "2025-12-15.clover" as any, //2025-12-15.clover

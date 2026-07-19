@@ -4,8 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:staging": "node scripts/with-env.mjs .env.staging next dev",
+    "dev:production": "node scripts/with-env.mjs .env.production next dev",
     "build": "next build",
+    "build:staging": "node scripts/with-env.mjs .env.staging next build",
+    "build:production": "node scripts/with-env.mjs .env.production next build",
     "start": "next start",
+    "start:staging": "node scripts/with-env.mjs .env.staging next start",
+    "start:production": "node scripts/with-env.mjs .env.production next start",
     "lint": "eslint"
   },
   "dependencies": {
