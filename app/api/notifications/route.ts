@@ -24,7 +24,12 @@ export async function GET(req: NextRequest) {
       .limit(30);
 
     if (nErr) {
-      return NextResponse.json({ error: nErr.message }, { status: 500 });
+      console.error("Notifications query error:", nErr);
+      return NextResponse.json({
+        notifications: [],
+        unread_count: 0,
+        degraded: true,
+      });
     }
 
     const { count, error: cErr } = await supabaseAdmin
@@ -34,7 +39,12 @@ export async function GET(req: NextRequest) {
       .eq("is_read", false);
 
     if (cErr) {
-      return NextResponse.json({ error: cErr.message }, { status: 500 });
+      console.error("Notifications count error:", cErr);
+      return NextResponse.json({
+        notifications: notifications || [],
+        unread_count: 0,
+        degraded: true,
+      });
     }
 
     return NextResponse.json({
@@ -42,6 +52,11 @@ export async function GET(req: NextRequest) {
       unread_count: count || 0,
     });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error("Notifications route failed:", e);
+    return NextResponse.json({
+      notifications: [],
+      unread_count: 0,
+      degraded: true,
+    });
   }
 }

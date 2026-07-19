@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
@@ -26,11 +27,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ hasCard: false });
     }
 
-    const paymentMethods = await stripe.paymentMethods.list({
-      customer: profile.stripe_customer_id,
-      type: "card",
-      limit: 1,
-    });
+    let paymentMethods;
+    try {
+      paymentMethods = await stripe.paymentMethods.list({
+        customer: profile.stripe_customer_id,
+        type: "card",
+        limit: 1,
+      });
+    } catch (error) {
+      if (
+        error instanceof Stripe.errors.StripeInvalidRequestError &&
+        error.code === "resource_missing"
+      ) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({ stripe_customer_id: null })
+          .eq("id", user.id);
+
+        return NextResponse.json({ hasCard: false });
+      }
+
+      throw error;
+    }
 
     if (!paymentMethods.data.length) {
       return NextResponse.json({ hasCard: false });

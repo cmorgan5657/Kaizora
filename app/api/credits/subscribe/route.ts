@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getOrCreateStripeCustomerId } from "@/lib/stripeCustomer";
 
 // Stable API version (matches the prices created in /api/admin/plans).
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -67,27 +68,11 @@ export async function POST(req: NextRequest) {
     const host = req.headers.get("host");
     const baseUrl = `${protocol}://${host}`;
 
-    // Find or create the Stripe customer
-    let customerId: string;
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("stripe_customer_id")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.stripe_customer_id) {
-      customerId = profile.stripe_customer_id;
-    } else {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { user_id: user.id },
-      });
-      customerId = customer.id;
-      await supabaseAdmin
-        .from("profiles")
-        .update({ stripe_customer_id: customerId })
-        .eq("id", user.id);
-    }
+    const customerId = await getOrCreateStripeCustomerId(
+      stripe,
+      user.id,
+      user.email,
+    );
 
     // Resolve an optional coupon code for any subscription plan.
     // Stripe applies the promotion code directly during Checkout.

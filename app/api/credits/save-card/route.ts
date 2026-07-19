@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getOrCreateStripeCustomerId } from "@/lib/stripeCustomer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,29 +17,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid user" }, { status: 401 });
     }
 
-    // Find or create Stripe customer
-    let customerId: string;
-
-    const { data: existingProfile } = await supabaseAdmin
-      .from("profiles")
-      .select("stripe_customer_id")
-      .eq("id", user.id)
-      .single();
-
-    if (existingProfile?.stripe_customer_id) {
-      customerId = existingProfile.stripe_customer_id;
-    } else {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { user_id: user.id },
-      });
-      customerId = customer.id;
-
-      await supabaseAdmin
-        .from("profiles")
-        .update({ stripe_customer_id: customerId })
-        .eq("id", user.id);
-    }
+    const customerId = await getOrCreateStripeCustomerId(
+      stripe,
+      user.id,
+      user.email,
+    );
 
     const protocol = req.headers.get("x-forwarded-proto") || "http";
     const host = req.headers.get("host");

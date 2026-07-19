@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getOrCreateStripeCustomerId } from "@/lib/stripeCustomer";
 
 // Stable API version for resolving promo codes (see /api/admin/discounts).
 const stripeStable = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -51,29 +52,11 @@ export async function POST(req: NextRequest) {
     const host = req.headers.get("host");
     const baseUrl = `${protocol}://${host}`;
 
-    // Find or create Stripe customer
-    let customerId: string;
-
-    const { data: existingProfile } = await supabaseAdmin
-      .from("profiles")
-      .select("stripe_customer_id")
-      .eq("id", user.id)
-      .single();
-
-    if (existingProfile?.stripe_customer_id) {
-      customerId = existingProfile.stripe_customer_id;
-    } else {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { user_id: user.id },
-      });
-      customerId = customer.id;
-
-      await supabaseAdmin
-        .from("profiles")
-        .update({ stripe_customer_id: customerId })
-        .eq("id", user.id);
-    }
+    const customerId = await getOrCreateStripeCustomerId(
+      stripe,
+      user.id,
+      user.email,
+    );
 
     // Resolve an optional discount code to its Stripe promotion code.
     let discounts: { promotion_code: string }[] | undefined;
