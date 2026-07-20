@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
+import { isSuperadminUserId } from "@/lib/superadminServer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,14 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify admin is superadmin
-    const { data: admin } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", adminId)
-      .single();
-
-    if (!admin || admin.role !== "superadmin") {
+    if (!(await isSuperadminUserId(adminId))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

@@ -1,4 +1,4 @@
-export const SUPERADMIN_EMAIL = "superadmin@gmail.com";
+export const SUPERADMIN_EMAIL = "dev@kaizora.ai";
 
 export function isSuperadminEmail(email?: string | null): boolean {
   return (email || "").trim().toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
