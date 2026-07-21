@@ -56,6 +56,16 @@ type RemixRelation = {
 
 const PAGE_SIZE = 15;
 
+function storageUrl(path?: string | null) {
+  if (!path) return null;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/assets/${path}`;
+}
+
+function isVideoPreviewPath(path?: string | null) {
+  if (!path) return false;
+  return /\.(mp4|mov|webm|mkv|m4v|avi)$/i.test(path);
+}
+
 function SkeletonRow() {
   return (
     <div className="flex gap-4 p-4 border-b border-white/10 animate-pulse">
@@ -529,28 +539,54 @@ export default function MarketplacePage() {
                       className="border-t border-white/10 hover:bg-white/5"
                     >
                       <td className="p-3">
-                        {asset.thumbnail_path || asset.storage_path ? (
-                          <img
-                            src={`${
-                              process.env.NEXT_PUBLIC_SUPABASE_URL
-                            }/storage/v1/object/public/assets/${
-                              asset.thumbnail_path || asset.storage_path
-                            }`}
-                            alt={asset.title}
-                            className="w-12 h-12 object-cover rounded"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
-                            <Image
-                              size={20}
-                              weight="duotone"
-                              className="text-gray-500"
-                            />
-                          </div>
-                        )}
+                        {(() => {
+                          const previewUrl = storageUrl(
+                            asset.thumbnail_path || asset.storage_path,
+                          );
+                          const videoUrl = storageUrl(asset.storage_path);
+                          const isVideo = asset.content_type === "video";
+                          const posterUrl =
+                            asset.thumbnail_path &&
+                            !isVideoPreviewPath(asset.thumbnail_path)
+                              ? storageUrl(asset.thumbnail_path)
+                              : undefined;
+
+                          if (isVideo && videoUrl) {
+                            return (
+                              <video
+                                src={videoUrl}
+                                poster={posterUrl}
+                                className="w-12 h-12 object-cover rounded bg-black"
+                                muted
+                                playsInline
+                                preload="metadata"
+                              />
+                            );
+                          }
+
+                          if (previewUrl) {
+                            return (
+                              <img
+                                src={previewUrl}
+                                alt={asset.title}
+                                className="w-12 h-12 object-cover rounded"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                              />
+                            );
+                          }
+
+                          return (
+                            <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                              <Image
+                                size={20}
+                                weight="duotone"
+                                className="text-gray-500"
+                              />
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="p-3 max-w-xs">
                         <div className="font-medium">{asset.title}</div>
