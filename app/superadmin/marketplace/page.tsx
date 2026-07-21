@@ -548,7 +548,7 @@ export default function MarketplacePage() {
                           const posterUrl =
                             asset.thumbnail_path &&
                             !isVideoPreviewPath(asset.thumbnail_path)
-                              ? storageUrl(asset.thumbnail_path)
+                              ? storageUrl(asset.thumbnail_path) ?? undefined
                               : undefined;
 
                           if (isVideo && videoUrl) {
